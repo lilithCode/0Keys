@@ -1,0 +1,6 @@
+mediapipe==1.0.1
+numpy==2.5.2
+opencv-contrib-python==5.0.0.93
+scipy==1.18.1
+sounddevice==0.5.6
+
