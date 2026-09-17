@@ -93,7 +93,9 @@ def main() -> int:
     frame_times: deque[float] = deque(maxlen=30)
 
     try:
-        with MediaPipeHandTracker(model_path=model_path) as tracker:
+        cv2.namedWindow("0Keys hand tracking", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+        cv2.resizeWindow("0Keys hand tracking", 1100, 825)
+        with MediaPipeHandTracker(model_path=model_path, input_mirrored=not args.no_mirror) as tracker:
             while True:
                 ok, frame = camera.read()
                 capture_time = time.perf_counter()

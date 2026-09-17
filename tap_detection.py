@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import argparse
-import queue
 import sys
-import time
 
-import numpy as np
 import sounddevice as sd
 
-from helper_audio import AudioTapDetector
+from helper_audio import AudioTapDetector, MicrophoneInput
 
 
 def parse_args() -> argparse.Namespace:
@@ -46,46 +43,25 @@ def main() -> int:
         calibration_seconds=args.calibration_seconds,
         threshold_db=args.threshold_db,
     )
-    audio_blocks: queue.Queue[tuple[np.ndarray, float]] = queue.Queue(maxsize=64)
-    dropped_blocks = 0
-
-    def callback(indata, _frames, time_info, status) -> None:
-        nonlocal dropped_blocks
-        if status:
-            dropped_blocks += 1
-        # Use one clock so audio can match camera frames later.
-        host_now = time.perf_counter()
-        first_sample_time = host_now + (
-            time_info.inputBufferAdcTime - time_info.currentTime
-        )
-        try:
-            audio_blocks.put_nowait((indata[:, 0].copy(), first_sample_time))
-        except queue.Full:
-            dropped_blocks += 1
-
     device = normalize_device(args.device)
+    microphone = MicrophoneInput(
+        device=device,
+        sample_rate=args.sample_rate,
+        block_size=args.block_size,
+    )
     print("Keep still and quiet during calibration, then tap the table.")
     print("Press Ctrl+C to stop.\n")
 
     try:
-        with sd.InputStream(
-            device=device,
-            samplerate=args.sample_rate,
-            blocksize=args.block_size,
-            channels=1,
-            dtype="float32",
-            latency="low",
-            callback=callback,
-        ):
+        with microphone:
             last_status_time = 0.0
             while True:
-                try:
-                    block, block_time = audio_blocks.get(timeout=1.0)
-                except queue.Empty:
+                block = microphone.get(timeout=1.0)
+                if block is None:
                     print("No audio blocks received for 1 second.", file=sys.stderr)
                     continue
-                event = detector.process_block(block, block_time)
-                now = time.perf_counter()
+                event = detector.process_block(block.samples, block.first_sample_time)
+                now = block.first_sample_time
 
                 if not detector.calibrated and now - last_status_time >= 0.1:
                     percent = int(detector.calibration_progress * 100)
@@ -104,7 +80,7 @@ def main() -> int:
                         f"strength={event.strength_db:.1f} dB"
                     )
     except KeyboardInterrupt:
-        print(f"\nStopped. Dropped or status blocks: {dropped_blocks}")
+        print(f"\nStopped. Dropped or status blocks: {microphone.dropped_blocks}")
         return 0
     except (sd.PortAudioError, OSError) as exc:
         print(f"Audio input failed: {exc}", file=sys.stderr)

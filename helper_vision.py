@@ -198,6 +198,7 @@ class MediaPipeHandTracker:
         detection_confidence: float = 0.55,
         presence_confidence: float = 0.55,
         tracking_confidence: float = 0.55,
+        input_mirrored: bool = False,
     ) -> None:
         model_path = Path(model_path)
         if not model_path.is_file():
@@ -213,6 +214,7 @@ class MediaPipeHandTracker:
             ) from exc
 
         self._mp = mp
+        self.input_mirrored = input_mirrored
         options = mp.tasks.vision.HandLandmarkerOptions(
             base_options=mp.tasks.BaseOptions(model_asset_path=str(model_path)),
             running_mode=mp.tasks.vision.RunningMode.VIDEO,
@@ -254,6 +256,9 @@ class MediaPipeHandTracker:
             if index < len(result.handedness) and result.handedness[index]:
                 category = result.handedness[index][0]
                 handedness = category.category_name or category.display_name or "Unknown"
+            if self.input_mirrored:
+                # Keep physical hand names when the preview is flipped.
+                handedness = {"Left": "Right", "Right": "Left"}.get(handedness, handedness)
             landmarks = tuple(
                 Landmark(x=float(point.x), y=float(point.y), z=float(point.z))
                 for point in hand_landmarks

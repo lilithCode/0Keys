@@ -1,4 +1,8 @@
 import unittest
+from types import SimpleNamespace
+from unittest.mock import MagicMock
+
+import numpy as np
 
 from helper_vision import (
     DetectedHand,
@@ -6,7 +10,41 @@ from helper_vision import (
     HandIdentityAssigner,
     HandSnapshot,
     Landmark,
+    MediaPipeHandTracker,
 )
+
+
+class HandLabelTests(unittest.TestCase):
+    def process_result(self, raw_label, mirrored):
+        tracker = MediaPipeHandTracker.__new__(MediaPipeHandTracker)
+        tracker.input_mirrored = mirrored
+        tracker._mp = SimpleNamespace(Image=MagicMock(), ImageFormat=SimpleNamespace(SRGB=1))
+        tracker._landmarker = MagicMock()
+        points = [SimpleNamespace(x=0.2, y=0.3, z=-0.01) for _ in range(21)]
+        tracker._landmarker.detect_for_video.return_value = SimpleNamespace(
+            hand_landmarks=[points],
+            handedness=[[SimpleNamespace(category_name=raw_label, display_name=raw_label)]],
+        )
+        tracker._identity = HandIdentityAssigner()
+        tracker._last_mediapipe_timestamp = -1
+        return tracker.process(np.zeros((10, 10, 3), dtype=np.uint8), 1.0).hands[0]
+
+    def test_mirrored_labels_are_corrected_without_moving_landmarks(self):
+        hand = self.process_result("Right", True)
+        self.assertEqual(hand.handedness, "Left")
+        self.assertEqual(hand.landmarks[8], Landmark(0.2, 0.3, -0.01))
+        self.assertEqual(self.process_result("Left", True).handedness, "Right")
+
+    def test_unmirrored_labels_are_unchanged(self):
+        for label in ("Left", "Right", "Unknown"):
+            self.assertEqual(self.process_result(label, False).handedness, label)
+
+    def test_unknown_hand_is_not_assigned_a_side(self):
+        self.assertEqual(self.process_result("Unknown", True).handedness, "Unknown")
+
+    def test_same_physical_hand_has_same_label_in_both_views(self):
+        self.assertEqual(self.process_result("Right", False).handedness,
+                         self.process_result("Left", True).handedness)
 
 
 def detected_hand(x: float, y: float, handedness: str) -> DetectedHand:

@@ -3,8 +3,11 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 import math
+import queue
+import time
 
 import numpy as np
+import sounddevice as sd
 from scipy.signal import butter, sosfilt
 
 
@@ -14,6 +17,74 @@ class TapEvent:
     strength_db: float
     peak_db: float
     noise_floor_db: float
+
+
+@dataclass(frozen=True)
+class AudioBlock:
+    samples: np.ndarray
+    first_sample_time: float
+
+
+class MicrophoneInput:
+    def __init__(
+        self,
+        device: int | str | None = None,
+        sample_rate: int = 48_000,
+        block_size: int = 256,
+    ) -> None:
+        self.device = device
+        self.sample_rate = sample_rate
+        self.block_size = block_size
+        self.dropped_blocks = 0
+        self._blocks: queue.Queue[AudioBlock] = queue.Queue(maxsize=64)
+        self._stream = None
+
+    def _callback(self, indata, _frames, time_info, status) -> None:
+        if status:
+            self.dropped_blocks += 1
+        host_now = time.perf_counter()
+        first_sample_time = host_now + (
+            time_info.inputBufferAdcTime - time_info.currentTime
+        )
+        block = AudioBlock(indata[:, 0].copy(), first_sample_time)
+        try:
+            self._blocks.put_nowait(block)
+        except queue.Full:
+            self.dropped_blocks += 1
+
+    def __enter__(self) -> "MicrophoneInput":
+        self._stream = sd.InputStream(
+            device=self.device,
+            samplerate=self.sample_rate,
+            blocksize=self.block_size,
+            channels=1,
+            dtype="float32",
+            latency="low",
+            callback=self._callback,
+        )
+        self._stream.start()
+        return self
+
+    def __exit__(self, *_args) -> None:
+        if self._stream is not None:
+            self._stream.stop()
+            self._stream.close()
+            self._stream = None
+
+    def get(self, timeout: float | None = None) -> AudioBlock | None:
+        try:
+            return self._blocks.get(timeout=timeout)
+        except queue.Empty:
+            return None
+
+    def drain(self, maximum_blocks: int = 128) -> list[AudioBlock]:
+        blocks = []
+        for _ in range(maximum_blocks):
+            try:
+                blocks.append(self._blocks.get_nowait())
+            except queue.Empty:
+                break
+        return blocks
 
 
 class AudioTapDetector:
