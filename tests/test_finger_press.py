@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from helper_finger_press import FingerPressDetector
+from helper_finger_press import FingerPressDetector, typing_hands
 from helper_keyboard import KeyboardCalibration, SpacedKeyboardLayout
 from helper_motion import MovementModel, MovementRecorder, NO_KEY
 from helper_vision import HandSnapshot, Landmark, TrackedHand
@@ -14,7 +14,6 @@ class FingerPressTests(unittest.TestCase):
         self.layout = SpacedKeyboardLayout()
         self.calibration = KeyboardCalibration(((0, 0), (1, 0), (1, 1), (0, 1)))
         self.model = MovementModel(self.layout, {})
-        # A 3:1 image keeps the 15 by 5 test keyboard square in pixels.
         self.detector = FingerPressDetector(self.layout, self.calibration, self.model, aspect=3.0)
         self.time = 0
 
@@ -39,7 +38,6 @@ class FingerPressTests(unittest.TestCase):
                 self.assertEqual(clicks[0].tip, tip)
 
     def test_thumb_types_only_space(self):
-        # The resting thumb is over G; a thumb press there must not type.
         clicks = []
         self.prepare()
         for points in example(finger=4, coupled=None).points:
@@ -56,7 +54,6 @@ class FingerPressTests(unittest.TestCase):
         self.assertEqual([c.key.name for c in clicks], ["space"])
 
     def test_same_label_on_both_hands_does_not_disable_typing(self):
-        # MediaPipe sometimes calls both hands "Right" when palms are out of view.
         clicks = []
         for index in range(5 + len(example().points)):
             self.time += 0.12
@@ -78,7 +75,6 @@ class FingerPressTests(unittest.TestCase):
             self.time += 1 / 30
             self.detector.update(snapshot(self.time))
         clicks = []
-        # Half a second down and back: a per-frame baseline would absorb it at 30 FPS.
         for progress in np.r_[np.linspace(0, 1, 16), np.linspace(1, 0, 16), np.zeros(6)]:
             self.time += 1 / 30
             points = pose()
@@ -87,7 +83,6 @@ class FingerPressTests(unittest.TestCase):
         self.assertEqual([c.key.name for c in clicks], ["a"])
 
     def test_saved_no_key_examples_do_not_veto_basic_presses(self):
-        # Old recordings of resting motion used to swallow small real presses.
         press = [0.45 * np.sin(np.pi * index / 8) if index <= 8 else 0 for index in range(12)]
         for _ in range(3):
             self.model.add(NO_KEY, example(coupled=None, amplitude=0.45))
@@ -101,7 +96,6 @@ class FingerPressTests(unittest.TestCase):
         self.assertEqual([c.key.name for c in clicks], ["a"])
 
     def test_press_size_does_not_depend_on_overlay_shape(self):
-        # The same camera motion must count the same after dragging the corners.
         def peak_level(corners):
             detector = FingerPressDetector(self.layout, KeyboardCalibration(corners), self.model)
             image = np.asarray([[0.30, 0.20]] * 21)
@@ -232,7 +226,6 @@ class FingerPressTests(unittest.TestCase):
     def test_reach_to_another_row_selects_destination_instead_of_home(self):
         self.prepare()
         clicks = []
-        # Pinky reaches from A (2.25, 2.5) to Q (2.25, 1.5), then lifts.
         for progress in (0, .35, .8, 1, 1, .8, .5, .5, .5):
             points = pose()
             points[20, 1] -= progress
@@ -313,13 +306,13 @@ class FingerPressTests(unittest.TestCase):
         clicks = []
         for progress in (0, .35, .8, 1, 1, .8, .35, 0, 0):
             points = pose()
-            points[20, 1] -= .5 * progress  # y=2.0 is the gap above A.
+            points[20, 1] -= .5 * progress
             clicks.extend(self.feed(points))
         self.assertEqual(clicks, [])
 
     def test_nearer_row_reach_can_settle_then_tap(self):
         home = pose()
-        home[8, 0] = 5.5  # Inside F, also inside V on the row below.
+        home[8, 0] = 5.5
         for _ in range(5):
             self.feed(home)
         for progress in (0, .35, .8, 1, 1, 1, 1, 1, 1):
@@ -344,8 +337,6 @@ class FingerPressTests(unittest.TestCase):
         self.assertEqual([c.key.name for c in clicks], ["q"])
 
     def jittered(self, rng, index_offset=0.0):
-        # Hovering hands at phone frame rate: every fingertip wobbles by about
-        # a tenth of a key from one frame to the next.
         self.time += 1 / 13
         points = pose()
         points[[4, 8, 12, 16, 20], 1] += rng.uniform(-0.1, 0.1, 5)
@@ -353,9 +344,6 @@ class FingerPressTests(unittest.TestCase):
         return self.detector.update(snapshot(self.time, points))
 
     def test_hovering_finger_that_shifts_and_wobbles_does_not_type(self):
-        # Screen recording: a still hovering hand typed J and L while only the
-        # other hand moved. The fingertip had shifted a little over the same
-        # key, and a one-frame wobble back looked like a press and release.
         for seed in range(8):
             rng = np.random.default_rng(seed)
             self.detector.reset()
@@ -379,6 +367,20 @@ class FingerPressTests(unittest.TestCase):
                 for _ in range(8):
                     clicks.extend(self.jittered(rng))
             self.assertEqual([c.key.name for c in clicks], ["f"] * 4, seed)
+
+    def test_false_hands_beyond_the_keyboard_or_much_smaller_are_ignored(self):
+        layout = KeyboardCalibration(((0.05, 0.3), (0.95, 0.3), (0.95, 0.7), (0.05, 0.7)))
+        def hand(points, hand_id):
+            image = [layout.map_to_image(x, y) for x, y in points]
+            return TrackedHand(hand_id, "Left", tuple(Landmark(x, y, 0) for x, y in image))
+        real = hand(pose(), 1)
+        other = hand(pose() + [6, 0], 2)
+        small = hand((pose() - [4, 3]) * 0.35 + [3, 3], 3)
+        beyond = hand(pose() - [0, 4.5], 4)
+        self.assertEqual(typing_hands((real, other), layout, 1.0), ([real, other], []))
+        self.assertEqual(typing_hands((real, small), layout, 1.0), ([real], [small]))
+        self.assertEqual(typing_hands((beyond,), layout, 1.0), ([], [beyond]))
+        self.assertEqual(typing_hands((real,), layout, 1.0), ([real], []))
 
     def test_whole_hand_move_then_immediate_tap_uses_new_position(self):
         self.prepare()

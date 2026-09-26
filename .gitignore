@@ -21,3 +21,8 @@ config/air_key_model*.json
 config/air_movement_model*.json
 config/phone_air_keyboard_layout*.json
 config/phone_air_movement_model*.json
+
+config/app_settings.json
+config/app_settings.tmp
+config/.control_key
+models/*.part

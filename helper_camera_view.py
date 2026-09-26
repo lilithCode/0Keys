@@ -22,7 +22,6 @@ class CameraView:
             raise ValueError("Camera view needs a quarter-turn rotation and a mirror setting")
 
     def rotate_preview(self, clockwise=True):
-        # Mirroring reverses the apparent direction of a raw-frame rotation.
         step = 90 if clockwise else -90
         if self.mirrored:
             step = -step
@@ -39,7 +38,6 @@ class CameraView:
         return cls(rotation, mirrored)
 
     def apply(self, frame):
-        # Fix orientation before tracking so the overlay stays aligned.
         frame = np.rot90(frame, -(self.rotation // 90))
         if self.mirrored:
             frame = np.fliplr(frame)

@@ -110,7 +110,6 @@ class PhoneCamera:
                 try:
                     connection = socket.create_connection(("127.0.0.1", self._port), timeout=0.5)
                     connection.settimeout(5)
-                    # ADB can accept before the phone server is listening.
                     first = connection.recv(1, socket.MSG_PEEK)
                     if first:
                         self._socket = connection

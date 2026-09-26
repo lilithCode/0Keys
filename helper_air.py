@@ -51,7 +51,6 @@ class AirKeyModel:
             if len(examples) >= 3:
                 values = np.asarray([[item["x"], item["y"]] for item in examples])
                 learned = np.median(values, axis=0)
-                # Keep learning close to the visible key instead of moving the layout.
                 center += np.clip(learned - center, -0.18, 0.18)
                 spread = np.clip(1.4826 * np.median(np.abs(values - learned), axis=0),
                                  [0.20, 0.18], spread)

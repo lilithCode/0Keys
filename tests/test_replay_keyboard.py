@@ -14,6 +14,12 @@ from scripts import replay_keyboard
 
 
 class ReplayTests(unittest.TestCase):
+    def test_typed_text_is_scored_against_the_intended_sentence(self):
+        score = replay_keyboard.score_text("hey hiw aare yu", "hey how are you")
+        self.assertEqual((score["correct"], score["wrong"], score["extra"], score["missed"]), (13, 1, 1, 1))
+        self.assertEqual(score["accuracy"], round(13 / 15, 3))
+        self.assertEqual(replay_keyboard.score_text("", "hi")["missed"], 2)
+
     def test_video_keeps_aspect_and_saves_view_for_future_replays(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

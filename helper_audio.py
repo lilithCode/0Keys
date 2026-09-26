@@ -200,7 +200,6 @@ class AudioTapDetector:
                 noise_floor_db=self._noise_floor_db,
             )
 
-        # Keep loud blocks out of the adaptive noise baseline.
         if rms_db <= self._noise_floor_db + self.threshold_db * 0.45:
             self._noise_db.append(rms_db)
             self._update_noise_floor()

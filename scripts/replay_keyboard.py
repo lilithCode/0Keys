@@ -10,7 +10,8 @@ import cv2
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from helper_keyboard import KeyboardCalibration, SpacedKeyboardLayout
-from helper_finger_press import FingerPressDetector
+from helper_finger_press import FingerPressDetector, typing_hands
+from helper_fusion import TextComposer
 from helper_camera_view import CameraView
 from helper_motion import MovementModel, MovementRecorder, NaturalPressModel
 from helper_vision import MediaPipeHandTracker, HandSnapshot, TrackedHand, Landmark
@@ -23,6 +24,33 @@ def snapshots_from_json(path):
     return [HandSnapshot(frame["timestamp"], tuple(TrackedHand(hand["hand_id"], hand["handedness"],
             tuple(Landmark(**point) for point in hand["landmarks"])) for hand in frame["hands"]))
             for frame in data]
+
+
+def score_text(typed, expected):
+    rows, cols = len(typed) + 1, len(expected) + 1
+    cost = [[0] * cols for _ in range(rows)]
+    for i in range(rows):
+        cost[i][0] = i
+    for j in range(cols):
+        cost[0][j] = j
+    for i in range(1, rows):
+        for j in range(1, cols):
+            cost[i][j] = min(cost[i - 1][j] + 1, cost[i][j - 1] + 1,
+                             cost[i - 1][j - 1] + (typed[i - 1] != expected[j - 1]))
+    i, j = len(typed), len(expected)
+    counts = {"correct": 0, "wrong": 0, "extra": 0, "missed": 0}
+    while i or j:
+        if i and j and cost[i][j] == cost[i - 1][j - 1] + (typed[i - 1] != expected[j - 1]):
+            counts["correct" if typed[i - 1] == expected[j - 1] else "wrong"] += 1
+            i, j = i - 1, j - 1
+        elif i and cost[i][j] == cost[i - 1][j] + 1:
+            counts["extra"] += 1
+            i -= 1
+        else:
+            counts["missed"] += 1
+            j -= 1
+    counts["accuracy"] = round(counts["correct"] / max(len(expected), 1), 3)
+    return counts
 
 
 def main():
@@ -38,9 +66,10 @@ def main():
     parser.add_argument("--calibration", default="config/air_keyboard_layout.json")
     parser.add_argument("--profile", default="config/air_movement_model.json")
     parser.add_argument("--model", default="models/hand_landmarker.task")
+    parser.add_argument("--expected", help="The sentence you meant to type, to score the replayed text")
     args = parser.parse_args()
     data = json.loads(Path(args.calibration).read_text())
-    aspect = 16 / 9  # Legacy recordings did not save their image dimensions.
+    aspect = 16 / 9
     if not args.extract:
         first = Path(args.snapshots).read_text().splitlines()[0]
         if not first.lstrip().startswith("["):
@@ -99,9 +128,16 @@ def main():
     model = NaturalPressModel(layout, personal)
     new = FingerPressDetector(layout, calibration, personal, aspect=aspect)
     new_events = []
+    composer = TextComposer()
+    ignored_hands = 0
     counts, events, states = Counter(), [], Counter()
     for snapshot in frames:
-        new_events.extend((round(snapshot.timestamp, 2), click.key.name) for click in new.update(snapshot))
+        kept, ignored = typing_hands(snapshot.hands, calibration, aspect)
+        ignored_hands += len(ignored)
+        snapshot = HandSnapshot(snapshot.timestamp, tuple(kept))
+        for click in new.update(snapshot):
+            new_events.append((round(snapshot.timestamp, 2), click.key.name))
+            composer.apply(click.key)
         for movement in old.update(snapshot):
             key, reason = model.predict(movement)
             counts[reason] += 1
@@ -109,11 +145,14 @@ def main():
                 events.append((round(snapshot.timestamp, 2), key.name))
         states[old.status] += 1
     report = {"frames": len(frames), "frames_with_hands": sum(bool(f.hands) for f in frames),
-              "valid_tracking_replay": any(f.hands for f in frames), "new_events": new_events,
+              "valid_tracking_replay": any(f.hands for f in frames), "ignored_false_hands": ignored_hands,
+              "new_events": new_events, "typed": composer.text,
               "old_reasons": counts, "old_events": events, "old_states": states,
               "aspect": aspect, "profile": profile_note,
               "note": "Detected events are not accuracy: intended keys and tap times are not labeled. "
                       "Screen recordings may also contain overlays that interfere with tracking."}
+    if args.expected is not None:
+        report["score"] = score_text(composer.text, args.expected)
     print(json.dumps(report, indent=2))
 
 

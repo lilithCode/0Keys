@@ -15,6 +15,7 @@ from helper_keyboard import SpacedKeyboardLayout, KeyboardCalibration
 from helper_camera_view import CameraView
 from helper_keyboard_ui import buttons, display_size
 from helper_vision import HandSnapshot
+from test_helper_gesture import fixture_hands
 from test_helper_motion import example, snapshot
 
 
@@ -26,7 +27,8 @@ def button_center(control, width=640, height=480):
 
 class MovementWorkflowTests(unittest.TestCase):
     def run_app(self, controls=None, train=False, pretrained=False, trained_only=True, click_type=False,
-                record=False, no_hands=False, click_rotate=False, saved_view=None, explicit_view=(0, False)):
+                record=False, no_hands=False, click_rotate=False, saved_view=None, explicit_view=(0, False),
+                phantom=False, start_sign=False, sign_frames=(), typing_start=7):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "model.task").touch()
@@ -36,7 +38,8 @@ class MovementWorkflowTests(unittest.TestCase):
                                                **(saved_view or {})}))
             args = argparse.Namespace(camera=0, model=str(root / "model.task"), calibration=str(calibration),
                                       profile=str(root / "pinch.json"), movement_profile=str(root / "movement.json"),
-                                      rotation=explicit_view[0], no_mirror=explicit_view[1], mode="movement", trained_only=trained_only)
+                                      rotation=explicit_view[0], no_mirror=explicit_view[1], mode="movement", trained_only=trained_only,
+                                      start_sign=start_sign)
             if record:
                 args.record_landmarks = str(root / "diagnostics" / "frames.jsonl")
             clock = [0.0]
@@ -61,7 +64,6 @@ class MovementWorkflowTests(unittest.TestCase):
                 frame_index[0] += 1
                 shown = display_size(640, 480)
                 if train and frame_index[0] == 2:
-                    # Mouse positions are on the enlarged picture; A is at 15% across, half way down.
                     callback[0](1, int(0.15 * shown[0]), int(0.5 * shown[1]), None, None)
                 if click_type and frame_index[0] == 3:
                     callback[0](1, *button_center("t"), None, None)
@@ -72,14 +74,25 @@ class MovementWorkflowTests(unittest.TestCase):
             camera.read.side_effect = read
             tracker = MagicMock()
 
+            self.masked_frames = []
+
             def process(frame, timestamp):
                 self.frame_shapes.append(frame.shape)
+                self.masked_frames.append(bool(np.any(frame == 128)))
                 if no_hands:
                     return HandSnapshot(timestamp, ())
-                start = 30 if train else 7
+                if frame_index[0] in sign_frames:
+                    _, _, hand = fixture_hands("pointing_up/rot0")[0]
+                    points = tuple(type(p)(p.x * 419 / 640, p.y * 419 / 480, p.z * 419 / 640) for p in hand.landmarks)
+                    return HandSnapshot(timestamp, (type(hand)(1, "Left", points),))
+                start = 30 if train else typing_start
                 index = frame_index[0] - start
                 points = example().points[index] if 0 <= index < len(example().points) else None
-                return snapshot(timestamp, points)
+                typed = snapshot(timestamp, points)
+                if phantom and not self.masked_frames[-1]:
+                    small = snapshot(timestamp, (example().points[0] - [4, 3]) * 0.3 + [1, 0.8], hand_id=9).hands
+                    return HandSnapshot(timestamp, typed.hands + small)
+                return typed
 
             tracker.process.side_effect = process
 
@@ -158,6 +171,24 @@ class MovementWorkflowTests(unittest.TestCase):
         panels, saved = self.run_app([ord("l")] + [-1] * 44 + [ord("q")], train=True, click_type=True)
         self.assertIn("TYPE MODE", panels[-1][1])
         self.assertIsNone(saved)
+
+    def test_false_hand_is_greyed_out_for_the_tracker_and_typing_continues(self):
+        panels, _ = self.run_app(trained_only=False, phantom=True)
+        self.assertFalse(self.masked_frames[0])
+        self.assertTrue(self.masked_frames[1])
+        self.assertEqual(panels[-1][0], "a")
+
+    def test_start_sign_waits_then_starts_typing_after_the_hand_settles(self):
+        panels, _ = self.run_app(trained_only=False, start_sign=True)
+        self.assertEqual(panels[-1][0], "")
+        self.assertIn("PAUSED", panels[-1][1])
+        self.assertIn("start sign", panels[-1][1])
+        panels, _ = self.run_app(trained_only=False, start_sign=True, sign_frames=range(1, 9), typing_start=12)
+        self.assertEqual(panels[-1][0], "")
+        self.assertTrue(any("Start sign seen" in detail for _, _, detail in panels))
+        panels, _ = self.run_app(trained_only=False, start_sign=True, sign_frames=range(1, 9), typing_start=20)
+        self.assertEqual(panels[-1][0], "a")
+        self.assertIn("TYPE MODE", panels[-1][1])
 
     def test_empty_view_explains_where_to_point_the_camera(self):
         panels, _ = self.run_app(trained_only=False, no_hands=True)

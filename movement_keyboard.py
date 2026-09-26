@@ -10,12 +10,13 @@ import cv2
 import numpy as np
 
 from hand_tracking import draw_snapshot
-from helper_camera_view import CameraView
 from helper_fusion import TextComposer
+from helper_gesture import SETTLE_SECONDS, StartSign
 from helper_finger_press import FingerPressDetector
 from helper_keyboard import KeyboardCalibration, SpacedKeyboardLayout
 from helper_keyboard_ui import button_at, display_size
 from helper_motion import GuidedTraining, MovementModel, MovementRecorder, NaturalPressModel, NO_KEY
+from helper_session import FalseHandMasker, load_layout, load_movement_model
 from helper_vision import HandHistory, MediaPipeHandTracker
 from helper_webcam import PhoneStream, WebcamStream
 
@@ -31,37 +32,18 @@ def run(args):
         return 1
     layout = SpacedKeyboardLayout()
     phone = bool(getattr(args, "phone", False))
-    view = CameraView.from_args(args, phone=phone)
     calibration_path = Path(args.calibration)
     profile_path = Path(args.movement_profile)
-    calibration = None
-    notice = "Rest briefly, reach to a key, touch the table, then lift your finger"
-    if calibration_path.exists():
-        try:
-            data = json.loads(calibration_path.read_text())
-            camera_id = "phone:back" if phone else args.camera
-            if data["camera"] != camera_id:
-                raise ValueError("Layout belongs to another camera")
-            view = CameraView.from_args(args, phone=phone, saved=data)
-            if (data["camera"], data["rotation"], data["mirrored"]) != (camera_id, view.rotation, view.mirrored):
-                raise ValueError("Layout belongs to another camera view")
-            calibration = KeyboardCalibration(data["points"], view.mirrored, data["flip_rows"])
-        except (OSError, ValueError, TypeError, KeyError) as exc:
-            notice = f"Default layout: {exc}"
-    if calibration is None:
-        calibration = KeyboardCalibration(((0.05, 0.28), (0.95, 0.28), (0.95, 0.72), (0.05, 0.72)), view.mirrored)
+    view, calibration, notice = load_layout(args, phone)
+    notice = notice or "Rest briefly, reach to a key, touch the table, then lift your finger"
 
     def context():
         data = context_for(args, view, calibration)
         data["gesture"] = "whole_hand_movement_v1"
         return data
 
-    model = MovementModel(layout, context())
-    if profile_path.exists():
-        try:
-            model, notice = MovementModel.load_for_view(profile_path, layout, context())
-        except (OSError, ValueError, KeyError, TypeError) as exc:
-            notice = f"Old movement profile not loaded: {exc}"
+    model, loaded = load_movement_model(profile_path, layout, context())
+    notice = loaded or notice
     recorder = MovementRecorder(calibration)
     sensitivity = min(max(float(getattr(args, "sensitivity", 1.0) or 1.0), 0.4), 2.5)
     press_detector = FingerPressDetector(layout, calibration, model, sensitivity=sensitivity)
@@ -70,7 +52,9 @@ def run(args):
     history = HandHistory()
     training = None
     selecting = False
-    paused = False
+    paused = bool(getattr(args, "start_sign", False))
+    start_sign = StartSign()
+    settling = False
     dragging = None
     size = [640, 480]
     shown = [640, 480]
@@ -87,6 +71,7 @@ def run(args):
         exposure_modes.insert(0, exposure_mode)
     hands_seen = None
     view_changed = False
+    masker = FalseHandMasker()
 
     def reset_input():
         recorder.reset()
@@ -147,6 +132,7 @@ def run(args):
             frame_times.clear()
             changed_layout()
             view_changed = True
+            masker.clear()
             notice = "View saved. Adjust the green corners if needed, then click TYPE or press T"
         elif control == "e" and camera is not None:
             exposure_mode = exposure_modes[(exposure_modes.index(exposure_mode) + 1) % len(exposure_modes)]
@@ -258,13 +244,20 @@ def run(args):
                 press_detector.aspect = size[0] / size[1]
                 if diagnostic is not None and diagnostic.tell() == 0:
                     diagnostic.write(json.dumps({"context": context(), "aspect": press_detector.aspect}) + "\n")
-                snapshot = tracker.process(frame, now)
+                snapshot = tracker.process(masker.prepare(frame, now), now)
                 if diagnostic is not None:
                     diagnostic.write(json.dumps(asdict(snapshot)) + "\n")
+                snapshot, ignored = masker.filter(snapshot, calibration, press_detector.aspect, size, now)
+                if ignored:
+                    notice = "Ignored a false hand outside the keyboard so both real hands can be tracked"
                 history.append(snapshot)
+                if start_sign.update(snapshot.hands, now, press_detector.aspect) and paused and dragging is None:
+                    paused, selecting, training, settling = False, False, None, True
+                    notice = "Start sign seen. Lower your hand onto the keys and type"
+                settling = settling and start_sign.seen is not None and now - start_sign.seen < SETTLE_SECONDS
                 frame_times.append(now)
                 fps = (len(frame_times) - 1) / max(frame_times[-1] - frame_times[0], 0.001)
-                if paused or dragging is not None:
+                if paused or dragging is not None or settling:
                     reset_input()
                 elif training is not None and not training.done:
                     if training.update(snapshot, recorder, model):
@@ -294,7 +287,6 @@ def run(args):
                         last_key, last_click = matches[0], now
                     elif len(matches) > 1:
                         notice = "Two matching hand movements at once. Ignored for safety"
-                # Draw on an enlarged copy; tracking already used the camera frame.
                 shown[:] = display_size(size[0], size[1])
                 display = cv2.resize(frame, tuple(shown), interpolation=cv2.INTER_LINEAR)
                 draw_layout(display, layout, calibration, {last_key.name} if last_key and now - last_click < 0.5 else set())
@@ -303,13 +295,20 @@ def run(args):
                     cv2.polylines(display, [key_polygon(target)], True, (255, 140, 50), 3, cv2.LINE_AA)
                 typing = not selecting and not paused and not getattr(args, "trained_only", False)
                 if typing:
-                    # Outline the key under each fingertip so aiming is visible.
                     for (hand_id, tip), key in press_detector.hover.items():
                         phase = press_detector.phases.get((hand_id, tip))
                         if key is not None and (tip != 4 or phase == "moving"):
                             cv2.polylines(display, [key_polygon(key)], True,
                                           PHASE_COLORS.get(phase, PHASE_COLORS["rest"]), 2, cv2.LINE_AA)
                 draw_snapshot(display, snapshot, history)
+                if paused or settling:
+                    progress = 1.0 if settling else start_sign.progress(now)
+                    banner = ("Lower your hand onto the keys..." if settling else
+                              "Hold up the start sign to type: index finger up, other fingers folded")
+                    cv2.rectangle(display, (0, 0), (shown[0], 48), (22, 24, 30), -1)
+                    cv2.rectangle(display, (0, 42), (int(shown[0] * progress), 48), (70, 230, 170), -1)
+                    scale = min(0.62, 0.62 * (shown[0] - 20) / cv2.getTextSize(banner, cv2.FONT_HERSHEY_SIMPLEX, 0.62, 1)[0][0])
+                    cv2.putText(display, banner, (10, 28), cv2.FONT_HERSHEY_SIMPLEX, scale, (240, 240, 240), 1, cv2.LINE_AA)
                 if typing:
                     for hand in snapshot.hands:
                         for tip in (4, 8, 12, 16, 20):
@@ -321,12 +320,11 @@ def run(args):
                             y = max(20, min(shown[1] - 8, int(point.y * shown[1]) - 10))
                             cv2.putText(display, key.label if key else "gap", (x, y), cv2.FONT_HERSHEY_SIMPLEX,
                                         0.55, color, 1, cv2.LINE_AA)
-                            # The bar measures flexion/depth; sideways aiming does not fill it.
                             level = min(press_detector.levels.get(name, 0.0), 1.0)
                             cv2.rectangle(display, (x, y + 5), (x + 32, y + 9), (40, 45, 55), -1)
                             cv2.rectangle(display, (x, y + 5), (x + int(32 * level), y + 9), color, -1)
                 if paused:
-                    status = "PAUSED | Click TYPE or press T to type"
+                    status = "PAUSED | Show the start sign, click TYPE or press T to type"
                 elif selecting:
                     status = "LEARN | " + (training.prompt(now) if training else "Click a key to train it. T returns to typing")
                 else:
@@ -362,7 +360,6 @@ def run(args):
                 fps_note = f"{fps:.1f} FPS, camera {camera.fps:.0f} FPS, {camera.note} (E changes)"
                 canvas = draw_panel(display, composer, status, detail, fps_note, movement=True)
                 if not window_sized:
-                    # Open at full size, shrunk only to fit an ordinary laptop screen.
                     fit = min(1.0, 1800 / canvas.shape[1], 940 / canvas.shape[0])
                     cv2.resizeWindow(window, int(canvas.shape[1] * fit), int(canvas.shape[0] * fit))
                     window_sized = True

@@ -18,6 +18,10 @@ class KeyboardEntryTests(unittest.TestCase):
         self.assertNotEqual(context_for(webcam, view, layout)["camera"],
                             context_for(phone, view, layout)["camera"])
 
+    def test_start_sign_is_on_unless_turned_off(self):
+        self.assertTrue(parse_args([]).start_sign)
+        self.assertFalse(parse_args(["--no-start-sign"]).start_sign)
+
     def test_explicit_paths_are_preserved(self):
         args = parse_args(["--phone", "--calibration", "my-layout.json", "--movement-profile", "my-movement.json"])
         self.assertEqual(args.calibration, "my-layout.json")

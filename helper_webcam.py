@@ -1,14 +1,3 @@
-"""Camera sources for the keyboard, laptop webcam or phone over USB.
-
-A one-frame OpenCV buffer made the V4L2 driver drop every other frame, which
-halved the frame rate. This reader keeps normal buffering and hands the newest
-frame to the caller from a background thread. The camera's own exposure is kept
-by default because it gives the cleanest picture; this webcam offers no gain
-control, so forcing a short exposure in a dim room produces a very noisy image
-that hand tracking cannot read. A short exposure remains available for bright
-rooms, where it doubles the frame rate and removes motion blur. Any exposure
-mode that was changed is put back when the stream closes.
-"""
 from collections import deque
 import sys
 import threading
@@ -17,7 +6,6 @@ import time
 import cv2
 import numpy as np
 
-# V4L2 exposure menu values used by OpenCV's V4L2 backend.
 V4L2_MANUAL = 1
 
 
@@ -58,7 +46,6 @@ class WebcamStream:
         self._thread.start()
 
     def set_exposure(self, mode):
-        """Switch between the camera's own exposure and a short fixed one."""
         with self._condition:
             self._restore_exposure()
             self.adaptive = False
@@ -71,7 +58,6 @@ class WebcamStream:
         if self._restore is None:
             return
         auto, exposure = self._restore
-        # The exposure value only applies in manual mode, so set it first.
         self.capture.set(cv2.CAP_PROP_EXPOSURE, exposure)
         self.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, auto)
         self._restore = None
@@ -106,7 +92,6 @@ class WebcamStream:
         self.note = f"{kind} {self.exposure / 10:.1f} ms"
 
     def _adjust(self, frame):
-        # Aim for a steady brightness while keeping each frame short.
         self.brightness = float(np.asarray(frame)[::6, ::6].mean())
         ratio = self.target_brightness / max(self.brightness, 1.0)
         if 0.85 <= ratio <= 1.18:
@@ -157,7 +142,6 @@ class WebcamStream:
             not self.adaptive or self.exposure >= self.max_exposure)
 
     def read(self, timeout=2.0):
-        """Return the newest frame not yet returned, with its arrival time."""
         with self._condition:
             self._condition.wait_for(
                 lambda: self._count > self._returned or self._error or self._stop.is_set(), timeout)
@@ -183,12 +167,6 @@ class WebcamStream:
 
 
 class PhoneStream:
-    """The rear phone camera over USB, with the same interface as WebcamStream.
-
-    A phone propped above the table sees whole hands from above while the laptop
-    screen stays at a normal angle, which a built-in webcam cannot do.
-    """
-
     def __init__(self, clock=time.perf_counter, camera=None):
         if camera is None:
             from helper_phone import PhoneCamera

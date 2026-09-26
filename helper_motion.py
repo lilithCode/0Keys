@@ -148,7 +148,6 @@ class MovementModel:
                 raise ValueError("Only one moving frame seen. Press slower so the camera can follow")
             if np.max(np.linalg.norm(raw[-1] - raw[0], axis=1)) / scale > 0.09:
                 raise ValueError("Finish by returning to your starting pose")
-            # Other fingers can join in, but a moving fingertip must reach this key.
             near = any(travel[tip] >= 0.09 and np.any(
                 (raw[:, tip, 0] >= key.x - 0.2) & (raw[:, tip, 0] <= key.x + key.width + 0.2)
                 & (raw[:, tip, 1] >= key.y - 0.2) & (raw[:, tip, 1] <= key.y + key.height + 0.2)
@@ -160,7 +159,6 @@ class MovementModel:
 
     @staticmethod
     def distance(motion, start, scale, sample):
-        # Match the whole hand as one pattern, not five separate clicks.
         shape = np.asarray(sample["motion"])
         delta = np.linalg.norm(motion - shape, axis=2)
         movement_error = float(np.mean(np.max(delta, axis=1)))
@@ -232,7 +230,6 @@ class MovementModel:
         target = KeyboardCalibration(context["points"], context["mirrored"], context["flip_rows"])
         model = cls(layout, context)
         for sample in old.samples:
-            # A moved keycap invalidates key labels, but not no-key recordings.
             if sample["label"] != NO_KEY:
                 continue
             raw = np.asarray(sample["start"]) + np.asarray(sample["motion"]) * sample["scale"]
@@ -320,7 +317,6 @@ class GuidedTraining:
             recorder.reset()
             return False
         if now < self.ready_at:
-            # Find the resting pose before the prompt, without saving any movement.
             recorder.update(snapshot)
             if any(state.active for state in recorder.states.values()):
                 recorder.reset()

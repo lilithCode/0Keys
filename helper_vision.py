@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -82,7 +81,6 @@ class HandIdentityAssigner:
             if timestamp - track.last_seen <= self.timeout
         }
 
-        # Match wrist positions so hand IDs stay stable.
         pairs: list[tuple[float, float, int, int]] = []
         for detection_index, detection in enumerate(detections):
             wrist = detection.landmarks[0]
@@ -237,7 +235,6 @@ class MediaPipeHandTracker:
         self.close()
 
     def process(self, bgr_frame: np.ndarray, capture_time: float) -> HandSnapshot:
-        # MediaPipe needs RGB frames.
         rgb_frame = np.ascontiguousarray(bgr_frame[:, :, ::-1])
         mp_image = self._mp.Image(
             image_format=self._mp.ImageFormat.SRGB,
@@ -257,7 +254,6 @@ class MediaPipeHandTracker:
                 category = result.handedness[index][0]
                 handedness = category.category_name or category.display_name or "Unknown"
             if self.input_mirrored:
-                # Keep physical hand names when the preview is flipped.
                 handedness = {"Left": "Right", "Right": "Left"}.get(handedness, handedness)
             landmarks = tuple(
                 Landmark(x=float(point.x), y=float(point.y), z=float(point.z))

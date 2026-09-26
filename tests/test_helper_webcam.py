@@ -9,8 +9,6 @@ from helper_webcam import PhoneStream, WebcamStream
 
 
 class FakeCapture:
-    """Behaves like a V4L2 webcam whose brightness follows the exposure time."""
-
     def __init__(self, backend="V4L2", manual_supported=True, gain=2.5, fail_after=None):
         self.backend = backend
         self.manual_supported = manual_supported
@@ -37,7 +35,7 @@ class FakeCapture:
             if prop == cv2.CAP_PROP_AUTO_EXPOSURE and value == 1 and not self.manual_supported:
                 return False
             if prop == cv2.CAP_PROP_EXPOSURE and self.props[cv2.CAP_PROP_AUTO_EXPOSURE] != 1:
-                return False  # Exposure time is inactive in auto mode.
+                return False
             self.props[prop] = float(value)
         return True
 
@@ -117,10 +115,8 @@ class WebcamStreamTests(unittest.TestCase):
                     stream.read(timeout=2)
 
 
-
 class CameraChoiceTests(unittest.TestCase):
     def test_the_camera_keeps_its_own_exposure_by_default(self):
-        # A forced short exposure is very noisy on webcams without gain control.
         fake = FakeCapture()
         with WebcamStream(0, capture=fake) as stream:
             self.assertFalse(stream.adaptive)

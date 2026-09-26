@@ -3,9 +3,6 @@ import textwrap
 import cv2
 import numpy as np
 
-# The camera picture is enlarged on screen, and the controls and text sit in a
-# panel beside it. A portrait phone view used to be a narrow strip, with the
-# text box drawn over the hands.
 PANEL_WIDTH = 420
 DISPLAY_WIDTH = 1280
 DISPLAY_HEIGHT = 860
@@ -13,7 +10,6 @@ MIN_HEIGHT = 640
 
 
 def display_size(width, height):
-    """Size of the camera picture on screen, keeping its shape."""
     scale = min(DISPLAY_WIDTH / width, DISPLAY_HEIGHT / height)
     return round(width * scale), round(height * scale)
 
@@ -36,7 +32,6 @@ def button_at(x, y, width, height):
 
 def text_box(canvas, text, rect):
     left, top, right, bottom = rect
-    # Blend only the box itself; copying the whole enlarged canvas was slow.
     area = canvas[top:bottom + 1, left:right + 1]
     layer = area.copy()
     cv2.rectangle(layer, (0, 0), (layer.shape[1], layer.shape[0]), (15, 20, 28), -1)
@@ -67,7 +62,6 @@ def text_box(canvas, text, rect):
 def draw_workspace(frame, composer, status, detail, fps):
     height, width = frame.shape[:2]
     canvas = np.zeros((max(height, MIN_HEIGHT), width + PANEL_WIDTH, 3), np.uint8)
-    # OpenCV fills colour far faster than NumPy broadcasting on a large canvas.
     cv2.rectangle(canvas, (0, 0), (canvas.shape[1], canvas.shape[0]), (22, 24, 30), -1)
     canvas[:height, :width] = frame
     left = width + 10
@@ -90,7 +84,6 @@ def draw_workspace(frame, composer, status, detail, fps):
     top = max(y + 10, 430)
     bottom = canvas.shape[0] - 10
     text_box(canvas, composer.text, (left, top, width + PANEL_WIDTH - 10, bottom))
-    # An accidental Caps press silently turned later letters into capitals.
     flags = [name for name, on in (("CAPS LOCK", composer.caps_lock), ("SHIFT", composer.shift)) if on]
     if flags:
         label = " + ".join(flags) + " ON"

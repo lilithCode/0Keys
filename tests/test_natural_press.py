@@ -97,7 +97,6 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(sorted(controls), sorted("tl c[]mf"))
         for _, control, (left, top, right, bottom) in buttons(width, height):
             self.assertEqual(button_at((left + right) // 2, (top + bottom) // 2, width, height), control)
-        # Clicks on the camera picture drag corners or pick keys, never buttons.
         self.assertIsNone(button_at(30, 30, width, height))
         self.assertIsNone(button_at(width // 2, height - 5, width, height))
 
@@ -108,11 +107,9 @@ class WorkspaceTests(unittest.TestCase):
         typed = draw_workspace(np.zeros((360, 640, 3), np.uint8), composer, "TYPE MODE", "Basic detection", 16)
         self.assertEqual(typed.shape, (640, 640 + PANEL_WIDTH, 3))
         self.assertTrue(np.any(empty[430:, 640:] != typed[430:, 640:]))
-        # The text sits beside the camera picture instead of covering the hands.
         self.assertFalse(np.any(typed[:360, :640]))
 
     def test_camera_picture_is_enlarged_and_keeps_its_shape(self):
-        # A 640 by 480 phone frame turned to portrait used to show as a narrow strip.
         width, height = display_size(480, 640)
         self.assertGreaterEqual(height, 800)
         self.assertAlmostEqual(width / height, 480 / 640, places=2)

@@ -20,6 +20,8 @@ def parse_args(argv=None):
     parser.add_argument("--exposure", default="auto",
                         help="auto (default): the camera's own exposure, cleanest picture; fast: short exposure "
                              "for 30 FPS in a bright room; or a fixed V4L2 value such as 50. E switches live")
+    parser.add_argument("--no-start-sign", dest="start_sign", action="store_false",
+                        help="Type immediately instead of waiting for the start sign: index finger up, other fingers folded")
     parser.add_argument("--sensitivity", type=float, default=1.0,
                         help="Press sensitivity from 0.4 to 2.5. Higher detects smaller presses. Adjust live with - and +")
     add_view_arguments(parser)

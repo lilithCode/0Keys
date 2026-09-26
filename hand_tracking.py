@@ -52,7 +52,6 @@ def draw_snapshot(frame, snapshot, history: HandHistory) -> None:
             cv2.LINE_AA,
         )
 
-        # A downward arrow shows movement toward the table.
         for tip_index in FINGERTIPS:
             velocity = history.tip_velocity(snapshot, hand.hand_id, tip_index)
             if velocity is None:

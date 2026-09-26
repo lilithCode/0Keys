@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+SELF="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+DIR="$(cd "$(dirname "$SELF")" && pwd)"
+if [ ! -x "$DIR/.venv/bin/python" ]; then
+    echo "0Keys is not installed yet. Run: $DIR/install.sh" >&2
+    exit 1
+fi
+exec "$DIR/.venv/bin/python" "$DIR/app.py" "$@"

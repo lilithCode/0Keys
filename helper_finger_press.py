@@ -6,28 +6,35 @@ import numpy as np
 from helper_motion import Movement, TIPS
 
 BASES = (2, 5, 9, 13, 17)
-# Fingertip distance from its resting place, relative to its own knuckle, in
-# palm widths in a 3D palm frame (depth is an estimate from the tracker).
 START = 0.07
 PEAK = 0.10
 RELEASE = 0.05
-# Seconds for the resting place to follow slow drift, independent of frame rate.
 REST_SECONDS = 0.5
 MIN_PALM = 0.05
 COUPLED_SECONDS = 0.14
-DEPTH_WEIGHT = 0.6  # Estimated depth is noisier than image coordinates.
-# Tracking wobble depends on camera, light and hand pose, so each finger's
-# resting wobble is measured and a press has to stand out from it.
+DEPTH_WEIGHT = 0.6
 NOISE_SECONDS = 1.0
 NOISE_START = 1.8
 NOISE_PEAK = 3.0
 NOISE_RELEASE = 2.0
 NOISE_STILL = 3.0
-# A tap comes back quickly, and for more than one frame. Displacement that is
-# held is a new hover pose, where a one-frame wobble back used to type a key.
 MAX_TAP_SECONDS = 0.9
 REBOUND = 0.45
 REBOUND_FRAMES = 2
+
+
+def typing_hands(hands, calibration, aspect=16 / 9):
+    def palm(hand):
+        a, b = hand.landmarks[5], hand.landmarks[17]
+        return math.hypot((a.x - b.x) * aspect, a.y - b.y)
+
+    largest = max((palm(hand) for hand in hands), default=0.0)
+    kept, ignored = [], []
+    for hand in hands:
+        tips = [calibration.map_to_keyboard(hand.landmarks[tip].x, hand.landmarks[tip].y) for tip in TIPS[1:]]
+        beyond = all(np.isfinite(y) and y < -0.5 for _, y in tips)
+        (ignored if beyond or palm(hand) < 0.5 * largest else kept).append(hand)
+    return kept, ignored
 
 
 @dataclass
@@ -58,15 +65,6 @@ class FingerClick:
 
 
 class FingerPressDetector:
-    """Estimate a table tap from finger extension/flexion and its release.
-
-    Motion is measured relative to the finger's own knuckle in a palm frame,
-    so moving the whole hand or stretching the overlay does
-    not change how large a press has to be. Hands are told apart by tracker ID
-    and screen position, not by the model's left/right guess, which flips when
-    the camera sees the backs of the hands with the palms out of view.
-    """
-
     def __init__(self, layout, calibration, personal, aspect=16 / 9, sensitivity=1.0):
         self.layout = layout
         self.calibration = calibration
@@ -99,8 +97,6 @@ class FingerPressDetector:
                 max(RELEASE, NOISE_RELEASE * noise) * scale)
 
     def track_noise(self, name, position, tip, elapsed, resting):
-        # Frame-to-frame wobble while resting. A single glitch is capped so it
-        # cannot make the finger deaf for the next second.
         last, level = self.noise.get(name, (None, 0.0))
         if last is not None and resting and elapsed > 0:
             step = min(self.motion(position - last, tip), START)
@@ -110,15 +106,10 @@ class FingerPressDetector:
 
     @staticmethod
     def motion(delta, tip):
-        # Sideways spreading/reaching is aiming, not a tap. The thumb has a
-        # different axis and is restricted to Space when selecting a key.
         weights = np.asarray([1.0 if tip == 4 else 0.0, 1.0, DEPTH_WEIGHT])
         return float(np.linalg.norm(delta * weights))
 
     def contact_key(self, samples, tip):
-        # A table press generally extends a finger, then flexes it on release.
-        # Use the most extended part of the motion, including the resting pose
-        # for lift-first taps. Never use an isolated single-frame key estimate.
         extension, points = max(samples, key=lambda item: item[0])
         candidate = self.layout.key_at(*points[tip])
         near = [points[tip] for length, points in samples if extension - length <= 0.06]
@@ -153,7 +144,6 @@ class FingerPressDetector:
     def assign_sides(self, hands):
         if len(hands) == 2:
             ordered = sorted(hands, key=lambda h: np.mean([h.landmarks[i].x for i in (0, 5, 9, 13, 17)]))
-            # A mirrored preview shows the physical left hand on the left.
             names = ("Left", "Right") if self.calibration.mirrored else ("Right", "Left")
             for hand, name in zip(ordered, names):
                 self.sides[hand.hand_id] = name
@@ -205,8 +195,6 @@ class FingerPressDetector:
                     state.reference = raw.copy()
                 if (state.baseline is not None and state.start is None and state.previous is not None
                         and not state.releasing and not state.blocked):
-                    # Carry the resting target with a translated palm. Otherwise
-                    # the slow rest filter can keep selecting the old screen key.
                     palm_indices = [0, 5, 9, 13, 17]
                     shift = np.median(raw[palm_indices] - state.previous[1][palm_indices], axis=0)
                     state.reference += shift
@@ -269,7 +257,6 @@ class FingerPressDetector:
                         state.frames = [state.previous, (now, raw.copy())]
                         state.contact = [(float(state.baseline[1]), state.reference.copy())] + list(state.aim)
                     else:
-                        # Slowly follow resting drift without waiting for the other fingers.
                         state.baseline = state.baseline + (position - state.baseline) * follow
                         state.reference += (raw - state.reference) * follow
                         state.previous = (now, raw.copy())
@@ -283,8 +270,6 @@ class FingerPressDetector:
                     state.peak = distance
                 if distance > start_level:
                     state.moving_frames += 1
-                # Detect the rebound instead of requiring a return to the home
-                # position. Lateral travel cannot release a held finger.
                 released = state.peak - distance >= max(release_level, state.peak * REBOUND)
                 state.returned = state.returned + 1 if released else 0
                 if (state.returned >= REBOUND_FRAMES and state.peak >= peak_level and state.moving_frames >= 2
@@ -301,14 +286,10 @@ class FingerPressDetector:
                     states[index] = FingerState(baseline=position.copy(), previous=(now, raw.copy()),
                                                 last_click=state.last_click, reference=raw.copy())
                     self.phases[name] = "aiming"
-                    self.status = "Finger settled over a new key. Touch the table and lift"
                 elif now - state.start > MAX_TAP_SECONDS:
-                    # Held away from rest: the hover pose changed. Rest here
-                    # instead of waiting for a wobble that looks like a lift.
                     states[index] = FingerState(baseline=position.copy(), previous=(now, raw.copy()),
                                                 last_click=state.last_click, reference=raw.copy())
                     self.phases[name] = "aiming"
-                    self.status = "Finger moved without a quick tap. Tap: touch the table and lift at once"
             peers = [(other.start, other.peak, other.blocked) for other in states]
             for index in sorted(completed, key=lambda i: states[i].peak, reverse=True):
                 state = states[index]
@@ -329,7 +310,6 @@ class FingerPressDetector:
                 if key is None or key.value in ("CONTROL", "ALT"):
                     reason = "Tap position unclear, in a gap, or inactive. Aim inside one key"
                 elif TIPS[index] == 4 and key.value != " ":
-                    # Thumbs rest near the space bar; only a thumb on Space types.
                     reason = "Thumb press ignored away from Space"
                 elif len(state.frames) >= 4 and self.personal.count(key.name, side) >= 3:
                     movement = Movement(side, [f[0] for f in state.frames], [f[1] for f in state.frames])
@@ -350,8 +330,6 @@ class FingerPressDetector:
                             other.warmup = []
                 else:
                     self.status = reason
-                # Keep the established rest reference for repeated taps. If a
-                # reach ended elsewhere, idle drift follows the new finger pose.
                 states[index] = FingerState(baseline=state.baseline.copy(), previous=(now, raw.copy()),
                                             last_click=state.last_click, aim=list(state.aim), releasing=True)
         if self.status != ready:

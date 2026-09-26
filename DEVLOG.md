@@ -220,3 +220,61 @@ fingertips are outlined, and Caps Lock and Shift are shown when on. Drawing the
 larger picture takes less time than before, 1.1 ms against 6.6 ms, because only
 the text box is blended now. The next step is recording landmarks while typing
 a known sentence, so accuracy can be measured instead of estimated.
+
+## A false hand, and scoring against the intended sentence
+
+I recorded myself typing "hey how are you what do you wanna do in this life".
+The box showed ` j qp[iqjto p`. Reading the status line of every frame, only 13
+keys fired in 30 seconds and almost none were right. The rest were rejected as
+unclear finger, unclear position, or ordinary movement. For the first six
+seconds the tracker also followed a false hand in the blurry background above
+the number row. Because it tracks at most two hands, my real left hand was not
+tracked at all. I checked this with a photo of hands: with two hands tracked, a
+third hand was never found, and greying out one tracked hand made the tracker
+drop it and pick up the third hand on the next frame.
+
+Hands that are much smaller than the other hand, or entirely beyond the far edge
+of the keyboard, are now ignored and greyed out for the tracker. Routine
+messages about fingers moving or settling no longer hide real rejections.
+The replay script now scores a landmark recording against the sentence I meant
+to type. Detection itself is not tuned yet: the screen recording has no
+landmarks, so the next step is a landmark recording of the same sentence.
+
+## A hand sign to start typing
+
+The keyboard now waits for a sign before typing: index finger straight, other
+fingers folded, thumb tucked in. The tracker could not read my drawing of the
+sign, so I tested it on MediaPipe's public sample photos of a raised index
+finger, thumbs up, thumbs down, a victory sign and open hands, each turned in
+four directions and mirrored. The sign is measured from joint distances relative
+to the hand's size. On every version of the raised finger the index reached well
+beyond its middle joint while the other fingers were folded and the thumb sat
+against them; every look-alike failed at least one of these by a wide margin.
+Those landmarks are saved as test data. The sign has to be held for 0.6 seconds,
+and taps are ignored until 0.8 seconds after it is lowered. It has not been tried
+with my own hand and the phone camera yet.
+
+## Typing into any app
+
+Until now the keyboard only typed into its own window. I added a control
+panel that stays running. Ctrl+Alt+K switches typing on and off from any
+application, and taps go to the window that has focus. The camera opens only
+while typing is on.
+
+I moved detection into a background engine that the panel runs. It uses the
+same layout, false-hand filter and press detector as the keyboard window, so a
+layout placed there types the same way. Keys are sent with wtype on Hyprland
+and other wlroots desktops, ydotool on GNOME, xdotool on X11, and pynput on
+Windows and macOS. Wayland does not let apps watch the keyboard, so on
+Hyprland the panel adds the hotkey as a compositor bind while it runs. Other
+desktops can bind `0keys toggle` as a custom shortcut.
+
+For safety:
+- Nothing types for 1.5 seconds after the hotkey, while the hands move to the
+  table.
+- Typing pauses after 20 seconds without hands.
+- Keys never go into the panel's own buttons.
+
+Install scripts set up everything for Linux, macOS and Windows. On my laptop
+the engine ran at 16 FPS on the webcam. I still need to install wtype and try
+typing into a real editor.
