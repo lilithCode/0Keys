@@ -6,7 +6,10 @@
 keyboard were there, and the letters show up in whatever app you're using: a browser,
 an editor, a chat window, anything.
 
-It runs quietly in the background. When you want to type with your hands, press
+**Try it in your browser first:** https://lilithcode.github.io/0Keys. There's nothing to install, and the video
+never leaves your computer.
+
+The desktop app runs quietly in the background. When you want to type with your hands, press
 **Ctrl + Alt + K**. When you're done, press it again.
 
 > **Heads up:** this is an experimental project. It works best with slow, deliberate

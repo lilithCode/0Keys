@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>0Keys – type on your desk</title>
+  <meta name="description" content="Try 0Keys in your browser: tap on your desk and your webcam turns it into a keyboard.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='6' fill='%23ffb547'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='17' font-weight='700' text-anchor='middle' fill='%231c2238'%3E0%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="logo" href="#" aria-label="0Keys home">
+      <span class="cap">0</span><span class="cap">K</span><span class="cap">e</span><span class="cap">y</span><span class="cap">s</span>
+    </a>
+    <a class="source" href="https://github.com/lilithCode/0Keys">Source on GitHub</a>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h1>Your desk is the keyboard.</h1>
+      <p class="lede">Point your webcam at the table, tap where the keys would be, and the letters appear below.
+        Everything runs in this tab. No video leaves your computer.</p>
+    </section>
+
+    <section class="stage" aria-label="Live demo">
+      <div class="screen">
+        <canvas id="view" aria-label="Camera picture with the keyboard drawn over your desk"></canvas>
+        <div class="cover" id="cover">
+          <p class="cover-title">Aim the camera at your desk</p>
+          <p class="cover-text">A laptop webcam normally looks at your face. Tilt the screen forward, or use a
+            USB webcam pointing down, so both hands fit in the picture, wrists included.</p>
+          <button class="primary" id="start" type="button">Turn on camera</button>
+          <p class="cover-note" id="load-note" role="status"></p>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="state" role="status" aria-live="polite">
+          <span class="light" id="light"></span>
+          <span class="state-label" id="state-label">Camera off</span>
+        </div>
+        <p class="detail" id="detail">Turn on the camera to begin.</p>
+
+        <button class="primary wide" id="toggle" type="button" disabled>Start typing</button>
+
+        <div class="tape-head">
+          <span>What you typed</span>
+          <span class="tape-actions">
+            <button class="quiet" id="copy" type="button">Copy</button>
+            <button class="quiet" id="clear" type="button">Clear</button>
+          </span>
+        </div>
+        <output class="tape" id="tape" aria-live="polite"><span id="typed"></span><span class="caret"></span></output>
+        <p class="modifiers" id="modifiers"></p>
+
+        <label class="field" for="sensitivity">
+          <span>Sensitivity <b id="sensitivity-value">1.00</b></span>
+          <input id="sensitivity" type="range" min="0.4" max="2.5" step="0.05" value="1">
+        </label>
+        <p class="hint">Raise it if taps are missed. Lower it if keys appear while you rest.</p>
+
+        <label class="field" for="camera">
+          <span>Camera</span>
+          <select id="camera"><option value="">Default camera</option></select>
+        </label>
+
+        <div class="row">
+          <button class="quiet" id="flip" type="button">Flip rows</button>
+          <button class="quiet" id="reset" type="button">Reset corners</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="guide">
+      <h2>How to type</h2>
+      <ol class="steps">
+        <li><b>Place the keyboard.</b> Drag the four round corners until the keys sit under your fingertips.
+          If the space bar is on the far side, press <kbd>Flip rows</kbd>.</li>
+        <li><b>Start typing.</b> You get a moment to put your hands down, then the light turns green.</li>
+        <li><b>Rest, then tap.</b> Hold your fingers still for a second, touch the table and lift. Each
+          fingertip shows the key it is over, and its small bar fills as you press.</li>
+      </ol>
+      <p class="aside">Thumbs only type Space. Shift and Caps work as toggles: tap Shift, then the letter.</p>
+    </section>
+
+    <section class="get">
+      <div>
+        <h2>Type into any app</h2>
+        <p>This page types into itself. The desktop app runs in the background and types into whatever window
+          you are using: press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>K</kbd>, tap, press it again to stop. It works on
+          Linux, Windows and macOS, and can use an Android phone as an overhead camera.</p>
+        <a class="primary link" href="https://github.com/lilithCode/0Keys">Download from GitHub</a>
+      </div>
+      <figure class="install">
+        <figcaption>Linux or macOS</figcaption>
+        <pre><code>git clone https://github.com/lilithCode/0Keys
+cd 0Keys
+./install.sh
+./0keys</code></pre>
+        <p class="install-note">On Windows, run <code>install.ps1</code> instead.</p>
+      </figure>
+    </section>
+  </main>
+
+  <footer class="bottom">
+    <p>0Keys is an experiment: it guesses taps from finger movement, so slow, clear taps work best.
+      Hand tracking by MediaPipe.</p>
+  </footer>
+
+  <script type="module" src="demo.js"></script>
+</body>
+</html>
