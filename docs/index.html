@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,600..900&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <a class="skip" href="#try">Skip to the demo</a>
@@ -41,10 +41,9 @@
 
   <main>
     <section class="hero wrap">
-      <p class="sticker"><span aria-hidden="true">★</span> Webcam keyboard</p>
-      <h1>Your desk is the <span class="outline">keyboard<span class="dot">.</span></span></h1>
-      <p class="lede">Point your webcam at the table and tap where the keys would be. Runs in this tab — no video leaves
-        your computer.</p>
+      <p class="sticker"><span aria-hidden="true">★</span> ZERO keyboard</p>
+      <h1>Your desk is the <span class="outline">keyboard</span></h1>
+      <p class="lede">Adjust your webcam to capture ur hands on table and start typing like normally like you're using a normal keyboard</p>
       <div class="actions">
         <a class="btn btn-dark btn-lg" id="hero-start" href="#try">Turn on camera</a>
         <a class="btn btn-light btn-lg" href="#how">How it works <span aria-hidden="true">→</span></a>
@@ -56,9 +55,8 @@
         <canvas id="view" aria-label="Camera picture with the keyboard drawn over your desk"></canvas>
         <div class="cover" id="cover">
           <p class="label label-lime">/ Setup</p>
-          <p class="cover-title">Aim the camera at your desk</p>
-          <p class="cover-text">Tilt your laptop screen forward or use a USB webcam pointing down — both hands in frame,
-            wrists included.</p>
+          <p class="cover-title">Adjust the camera at your desk</p>
+          <p class="cover-text">Tilt your laptop screen forward or use a USB webcam pointing down, both hands and wrists in frame. </p>
           <button class="btn btn-lime" id="start" type="button">Turn on camera</button>
           <p class="cover-note" id="load-note" role="status"></p>
         </div>
@@ -70,7 +68,7 @@
             <span class="light" id="light"></span>
             <span class="state-label" id="state-label">Camera off</span>
           </div>
-          <p class="detail" id="detail">Turn on the camera to begin.</p>
+          <p class="detail" id="detail">Turn on the camera to begin</p>
           <button class="btn btn-dark btn-block" id="toggle" type="button" disabled>Start typing</button>
         </div>
 
@@ -92,7 +90,7 @@
             <b class="readout" id="sensitivity-value">1.00</b>
           </label>
           <input id="sensitivity" type="range" min="0.4" max="2.5" step="0.05" value="1">
-          <p class="hint">Raise if taps are missed. Lower if keys fire while resting.</p>
+          <p class="hint">Raise if taps are missed. Lower if keys are misclicking while resting hand</p>
         </div>
 
         <div class="panel-sec">
@@ -115,22 +113,22 @@
         <li class="card">
           <span class="num" aria-hidden="true">01</span>
           <h3>Place the keyboard</h3>
-          <p>Drag the four corners until the keys sit under your fingertips. Space bar on the far side? Press
-            <kbd>Flip rows</kbd>.</p>
+          <p>Drag the four corners until the you think keys are in the right place. If you want Space bar on the far side then Press
+            <kbd>Flip rows</kbd></p>
         </li>
         <li class="card">
           <span class="num" aria-hidden="true">02</span>
           <h3>Start typing</h3>
-          <p>Hit <b>Start typing</b> and put your hands down. The light turns green when it’s ready.</p>
+          <p>Press <b>Start typing</b> and put your hands on the position. The light turns green when it’s ready</p>
         </li>
         <li class="card">
           <span class="num" aria-hidden="true">03</span>
           <h3>Rest, then tap</h3>
-          <p>Hold still for a second, then touch the table and lift. Each fingertip shows the key it’s over.</p>
+          <p>Hold still for a second, then tap the table and lift. Each fingertip will shows the key it’s over</p>
         </li>
       </ol>
-      <p class="tip"><span class="tip-badge">Tip</span> <span>Thumbs type Space. Shift and Caps are toggles — tap
-        <kbd>Shift</kbd>, then the letter.</span></p>
+      <p class="tip"><span class="tip-badge">Tip</span> <span>Just a Tip to lift your fingers above in the air so that it can detect the Taps better
+        </p>
     </section>
 
     <section class="desktop wrap" id="desktop">
@@ -140,7 +138,7 @@
           <h2>Type into any app</h2>
           <p>Runs in the background on Linux, Windows and macOS. Press <kbd class="kbd-light">Ctrl</kbd>
             <kbd class="kbd-light">Alt</kbd> <kbd class="kbd-light">K</kbd> to start, again to stop. It can even use an
-            Android phone as an overhead camera.</p>
+            Android phone as camera for better resolution</p>
           <a class="btn btn-lime btn-lg" href="https://github.com/lilithCode/0Keys">Download from GitHub <span aria-hidden="true">↗</span></a>
         </div>
         <figure class="term">
@@ -157,7 +155,7 @@
 
   <footer class="bottom">
     <div class="wrap bottom-row">
-      <p>0Keys — an experiment. Slow, clear taps work best.</p>
+      <p>0Keys — experimental project. clear taps work best</p>
       <a href="https://github.com/lilithCode/0Keys">Source on GitHub <span aria-hidden="true">↗</span></a>
     </div>
   </footer>
@@ -194,27 +192,17 @@
       fill();
 
       const cursor = document.getElementById("cursor");
-      const fine = matchMedia("(pointer: fine)").matches;
-      const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!fine || calm) return;
-      let x = innerWidth / 2, y = innerHeight / 2, cx = x, cy = y;
+      if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
       addEventListener("pointermove", (event) => {
-        x = event.clientX;
-        y = event.clientY;
+        cursor.style.transform = `translate(${event.clientX}px, ${event.clientY}px)`;
         cursor.classList.add("on");
       }, { passive: true });
       document.addEventListener("pointerleave", () => cursor.classList.remove("on"));
       addEventListener("pointerover", (event) => {
         cursor.classList.toggle("big", !!event.target.closest("a, button, select, input, canvas"));
       });
-      (function tick() {
-        cx += (x - cx) * 0.2;
-        cy += (y - cy) * 0.2;
-        cursor.style.transform = `translate(${cx}px, ${cy}px)`;
-        requestAnimationFrame(tick);
-      })();
     })();
   </script>
-  <script type="module" src="demo.js"></script>
+  <script type="module" src="demo.js?v=2"></script>
 </body>
 </html>

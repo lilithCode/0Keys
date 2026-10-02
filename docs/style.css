@@ -898,7 +898,16 @@ kbd {
   mix-blend-mode: difference;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 200ms ease, width 200ms ease, height 200ms ease, left 200ms ease, top 200ms ease;
+  transition: opacity 200ms ease, width 150ms ease, height 150ms ease, left 150ms ease, top 150ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html,
+  html *,
+  html *::before,
+  html *::after {
+    cursor: none !important;
+  }
 }
 
 .cursor.on {
