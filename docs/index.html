@@ -5,112 +5,216 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>0Keys – type on your desk</title>
   <meta name="description" content="Try 0Keys in your browser: tap on your desk and your webcam turns it into a keyboard.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='6' fill='%23ffb547'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='17' font-weight='700' text-anchor='middle' fill='%231c2238'%3E0%3C/text%3E%3C/svg%3E">
+  <meta name="theme-color" content="#f5f1e6">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='6' fill='%23d4e82a' stroke='%230b0b0d' stroke-width='2.5'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='17' font-weight='700' text-anchor='middle' fill='%230b0b0d'%3E0%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,600..900&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <a class="skip" href="#try">Skip to the demo</a>
+
   <header class="top">
-    <a class="logo" href="#" aria-label="0Keys home">
-      <span class="cap">0</span><span class="cap">K</span><span class="cap">e</span><span class="cap">y</span><span class="cap">s</span>
-    </a>
-    <a class="source" href="https://github.com/lilithCode/0Keys">Source on GitHub</a>
+    <nav class="nav" aria-label="Main">
+      <a class="logo" href="#" aria-label="0Keys home">
+        <span class="cap">0</span><span class="cap">K</span><span class="cap">E</span><span class="cap">Y</span><span class="cap">S</span>
+      </a>
+      <button class="menu" id="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Menu">
+        <span></span><span></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#try">Try it</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#desktop">Desktop app</a></li>
+      </ul>
+      <a class="btn btn-pill nav-gh" href="https://github.com/lilithCode/0Keys">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
   </header>
 
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Linux · Windows · macOS ✦</span><span>Hand tracking by MediaPipe ✦</span><span>Runs in your tab ✦</span><span>No video leaves your computer ✦</span>
+      <span>Linux · Windows · macOS ✦</span><span>Hand tracking by MediaPipe ✦</span><span>Runs in your tab ✦</span><span>No video leaves your computer ✦</span>
+    </div>
+  </div>
+
   <main>
-    <section class="intro">
-      <h1>Your desk is the keyboard.</h1>
-      <p class="lede">Point your webcam at the table, tap where the keys would be, and the letters appear below.
-        Everything runs in this tab. No video leaves your computer.</p>
+    <section class="hero wrap">
+      <p class="sticker"><span aria-hidden="true">★</span> Webcam keyboard</p>
+      <h1>Your desk is the <span class="outline">keyboard<span class="dot">.</span></span></h1>
+      <p class="lede">Point your webcam at the table and tap where the keys would be. Runs in this tab — no video leaves
+        your computer.</p>
+      <div class="actions">
+        <a class="btn btn-dark btn-lg" id="hero-start" href="#try">Turn on camera</a>
+        <a class="btn btn-light btn-lg" href="#how">How it works <span aria-hidden="true">→</span></a>
+      </div>
     </section>
 
-    <section class="stage" aria-label="Live demo">
+    <section class="stage wrap" id="try" aria-label="Live demo">
       <div class="screen">
         <canvas id="view" aria-label="Camera picture with the keyboard drawn over your desk"></canvas>
         <div class="cover" id="cover">
+          <p class="label label-lime">/ Setup</p>
           <p class="cover-title">Aim the camera at your desk</p>
-          <p class="cover-text">A laptop webcam normally looks at your face. Tilt the screen forward, or use a
-            USB webcam pointing down, so both hands fit in the picture, wrists included.</p>
-          <button class="primary" id="start" type="button">Turn on camera</button>
+          <p class="cover-text">Tilt your laptop screen forward or use a USB webcam pointing down — both hands in frame,
+            wrists included.</p>
+          <button class="btn btn-lime" id="start" type="button">Turn on camera</button>
           <p class="cover-note" id="load-note" role="status"></p>
         </div>
       </div>
 
       <aside class="panel">
-        <div class="state" role="status" aria-live="polite">
-          <span class="light" id="light"></span>
-          <span class="state-label" id="state-label">Camera off</span>
+        <div class="panel-sec">
+          <div class="state" role="status" aria-live="polite">
+            <span class="light" id="light"></span>
+            <span class="state-label" id="state-label">Camera off</span>
+          </div>
+          <p class="detail" id="detail">Turn on the camera to begin.</p>
+          <button class="btn btn-dark btn-block" id="toggle" type="button" disabled>Start typing</button>
         </div>
-        <p class="detail" id="detail">Turn on the camera to begin.</p>
 
-        <button class="primary wide" id="toggle" type="button" disabled>Start typing</button>
-
-        <div class="tape-head">
-          <span>What you typed</span>
-          <span class="tape-actions">
-            <button class="quiet" id="copy" type="button">Copy</button>
-            <button class="quiet" id="clear" type="button">Clear</button>
-          </span>
+        <div class="panel-sec">
+          <div class="sec-head">
+            <span class="label">/ Output</span>
+            <span class="sec-actions">
+              <button class="btn btn-sm" id="copy" type="button">Copy</button>
+              <button class="btn btn-sm" id="clear" type="button">Clear</button>
+            </span>
+          </div>
+          <output class="tape" id="tape" aria-live="polite"><span id="typed"></span><span class="caret"></span></output>
+          <p class="modifiers" id="modifiers"></p>
         </div>
-        <output class="tape" id="tape" aria-live="polite"><span id="typed"></span><span class="caret"></span></output>
-        <p class="modifiers" id="modifiers"></p>
 
-        <label class="field" for="sensitivity">
-          <span>Sensitivity <b id="sensitivity-value">1.00</b></span>
+        <div class="panel-sec">
+          <label class="sec-head" for="sensitivity">
+            <span class="label">/ Sensitivity</span>
+            <b class="readout" id="sensitivity-value">1.00</b>
+          </label>
           <input id="sensitivity" type="range" min="0.4" max="2.5" step="0.05" value="1">
-        </label>
-        <p class="hint">Raise it if taps are missed. Lower it if keys appear while you rest.</p>
+          <p class="hint">Raise if taps are missed. Lower if keys fire while resting.</p>
+        </div>
 
-        <label class="field" for="camera">
-          <span>Camera</span>
-          <select id="camera"><option value="">Default camera</option></select>
-        </label>
-
-        <div class="row">
-          <button class="quiet" id="flip" type="button">Flip rows</button>
-          <button class="quiet" id="reset" type="button">Reset corners</button>
+        <div class="panel-sec">
+          <label class="sec-head" for="camera"><span class="label">/ Camera</span></label>
+          <div class="select">
+            <select id="camera"><option value="">Default camera</option></select>
+          </div>
+          <div class="row">
+            <button class="btn" id="flip" type="button">Flip rows</button>
+            <button class="btn" id="reset" type="button">Reset corners</button>
+          </div>
         </div>
       </aside>
     </section>
 
-    <section class="guide">
-      <h2>How to type</h2>
+    <section class="how wrap" id="how">
+      <p class="label">/ How it works</p>
+      <h2>Three steps</h2>
       <ol class="steps">
-        <li><b>Place the keyboard.</b> Drag the four round corners until the keys sit under your fingertips.
-          If the space bar is on the far side, press <kbd>Flip rows</kbd>.</li>
-        <li><b>Start typing.</b> You get a moment to put your hands down, then the light turns green.</li>
-        <li><b>Rest, then tap.</b> Hold your fingers still for a second, touch the table and lift. Each
-          fingertip shows the key it is over, and its small bar fills as you press.</li>
+        <li class="card">
+          <span class="num" aria-hidden="true">01</span>
+          <h3>Place the keyboard</h3>
+          <p>Drag the four corners until the keys sit under your fingertips. Space bar on the far side? Press
+            <kbd>Flip rows</kbd>.</p>
+        </li>
+        <li class="card">
+          <span class="num" aria-hidden="true">02</span>
+          <h3>Start typing</h3>
+          <p>Hit <b>Start typing</b> and put your hands down. The light turns green when it’s ready.</p>
+        </li>
+        <li class="card">
+          <span class="num" aria-hidden="true">03</span>
+          <h3>Rest, then tap</h3>
+          <p>Hold still for a second, then touch the table and lift. Each fingertip shows the key it’s over.</p>
+        </li>
       </ol>
-      <p class="aside">Thumbs only type Space. Shift and Caps work as toggles: tap Shift, then the letter.</p>
+      <p class="tip"><span class="tip-badge">Tip</span> <span>Thumbs type Space. Shift and Caps are toggles — tap
+        <kbd>Shift</kbd>, then the letter.</span></p>
     </section>
 
-    <section class="get">
-      <div>
-        <h2>Type into any app</h2>
-        <p>This page types into itself. The desktop app runs in the background and types into whatever window
-          you are using: press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>K</kbd>, tap, press it again to stop. It works on
-          Linux, Windows and macOS, and can use an Android phone as an overhead camera.</p>
-        <a class="primary link" href="https://github.com/lilithCode/0Keys">Download from GitHub</a>
+    <section class="desktop wrap" id="desktop">
+      <div class="desktop-card">
+        <div class="desktop-copy">
+          <p class="label label-lime">/ Desktop app</p>
+          <h2>Type into any app</h2>
+          <p>Runs in the background on Linux, Windows and macOS. Press <kbd class="kbd-light">Ctrl</kbd>
+            <kbd class="kbd-light">Alt</kbd> <kbd class="kbd-light">K</kbd> to start, again to stop. It can even use an
+            Android phone as an overhead camera.</p>
+          <a class="btn btn-lime btn-lg" href="https://github.com/lilithCode/0Keys">Download from GitHub <span aria-hidden="true">↗</span></a>
+        </div>
+        <figure class="term">
+          <figcaption><span>Linux / macOS</span><span>Bash</span></figcaption>
+          <pre><code><span>git clone https://github.com/lilithCode/0Keys</span>
+<span>cd 0Keys</span>
+<span>./install.sh</span>
+<span>./0keys</span></code></pre>
+          <p class="term-note">Windows → run <b>install.ps1</b></p>
+        </figure>
       </div>
-      <figure class="install">
-        <figcaption>Linux or macOS</figcaption>
-        <pre><code>git clone https://github.com/lilithCode/0Keys
-cd 0Keys
-./install.sh
-./0keys</code></pre>
-        <p class="install-note">On Windows, run <code>install.ps1</code> instead.</p>
-      </figure>
     </section>
   </main>
 
   <footer class="bottom">
-    <p>0Keys is an experiment: it guesses taps from finger movement, so slow, clear taps work best.
-      Hand tracking by MediaPipe.</p>
+    <div class="wrap bottom-row">
+      <p>0Keys — an experiment. Slow, clear taps work best.</p>
+      <a href="https://github.com/lilithCode/0Keys">Source on GitHub <span aria-hidden="true">↗</span></a>
+    </div>
   </footer>
 
+  <div class="cursor" id="cursor" aria-hidden="true"></div>
+
+  <script>
+    (() => {
+      const menu = document.getElementById("menu");
+      const links = document.getElementById("nav-links");
+      menu.addEventListener("click", () => {
+        const open = menu.getAttribute("aria-expanded") !== "true";
+        menu.setAttribute("aria-expanded", String(open));
+        links.classList.toggle("open", open);
+      });
+      links.addEventListener("click", (event) => {
+        if (event.target.closest("a")) {
+          menu.setAttribute("aria-expanded", "false");
+          links.classList.remove("open");
+        }
+      });
+
+      document.getElementById("hero-start").addEventListener("click", () => {
+        const start = document.getElementById("start");
+        if (!document.getElementById("cover").hidden) start.click();
+      });
+
+      const range = document.getElementById("sensitivity");
+      const fill = () => {
+        const pct = ((range.value - range.min) / (range.max - range.min)) * 100;
+        range.style.setProperty("--fill", `${pct}%`);
+      };
+      range.addEventListener("input", fill);
+      fill();
+
+      const cursor = document.getElementById("cursor");
+      const fine = matchMedia("(pointer: fine)").matches;
+      const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!fine || calm) return;
+      let x = innerWidth / 2, y = innerHeight / 2, cx = x, cy = y;
+      addEventListener("pointermove", (event) => {
+        x = event.clientX;
+        y = event.clientY;
+        cursor.classList.add("on");
+      }, { passive: true });
+      document.addEventListener("pointerleave", () => cursor.classList.remove("on"));
+      addEventListener("pointerover", (event) => {
+        cursor.classList.toggle("big", !!event.target.closest("a, button, select, input, canvas"));
+      });
+      (function tick() {
+        cx += (x - cx) * 0.2;
+        cy += (y - cy) * 0.2;
+        cursor.style.transform = `translate(${cx}px, ${cy}px)`;
+        requestAnimationFrame(tick);
+      })();
+    })();
+  </script>
   <script type="module" src="demo.js"></script>
 </body>
 </html>

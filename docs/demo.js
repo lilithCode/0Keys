@@ -10,7 +10,7 @@ const MASK_SECONDS = 1.5;
 const STORE = "0keys-demo";
 const CONNECTIONS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11],
   [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [0, 17], [17, 18], [18, 19], [19, 20]];
-const PHASES = { rest: "#e9e4d8", warmup: "#9aa3c0", moving: "#ffb547", blocked: "#ff8a80", aiming: "#8fb4ff", release: "#7fe0c2" };
+const PHASES = { rest: "#f5f1e6", warmup: "#9aa3c0", moving: "#d4e82a", blocked: "#ff8a80", aiming: "#8fb4ff", release: "#7fe0c2" };
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("view");
@@ -294,17 +294,17 @@ function draw() {
     const inactive = key.value === "CONTROL" || key.value === "ALT";
     const pressed = flash && flash.name === key.name && flash.until > now;
     polygon(shape);
-    context.fillStyle = pressed ? "rgba(255,181,71,0.75)" : "rgba(20,24,44,0.42)";
+    context.fillStyle = pressed ? "rgba(212,232,42,0.75)" : "rgba(11,11,13,0.42)";
     context.fill();
     context.lineWidth = (hovered.has(key.name) ? 3 : 1.2) * unit;
-    context.strokeStyle = hovered.get(key.name) || (inactive ? "rgba(233,228,216,0.18)" : "rgba(233,228,216,0.55)");
+    context.strokeStyle = hovered.get(key.name) || (inactive ? "rgba(245,241,230,0.18)" : "rgba(245,241,230,0.55)");
     context.stroke();
     const [cx, cy] = toCanvas(calibration.mapToImage(key.x + key.width / 2, key.y + key.height / 2));
     const height = Math.hypot(shape[3][0] - shape[0][0], shape[3][1] - shape[0][1]);
-    context.font = `600 ${Math.max(9, Math.min(22 * unit, height * 0.42))}px "JetBrains Mono", monospace`;
+    context.font = `600 ${Math.max(9, Math.min(22 * unit, height * 0.42))}px "Space Mono", monospace`;
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillStyle = pressed ? "#1c2238" : inactive ? "rgba(233,228,216,0.3)" : "rgba(233,228,216,0.9)";
+    context.fillStyle = pressed ? "#0b0b0d" : inactive ? "rgba(245,241,230,0.3)" : "rgba(245,241,230,0.9)";
     context.fillText(key.label, cx, cy);
   }
 
@@ -330,11 +330,11 @@ function draw() {
       const level = Math.min(detector.levels.get(name) || 0, 1);
       const lx = Math.min(w - 60 * unit, x + 10 * unit);
       const ly = Math.max(20 * unit, y - 12 * unit);
-      context.font = `600 ${15 * unit}px "JetBrains Mono", monospace`;
+      context.font = `600 ${15 * unit}px "Space Mono", monospace`;
       context.textAlign = "left";
       context.fillStyle = color;
       context.fillText(key ? key.label : "gap", lx, ly);
-      context.fillStyle = "rgba(20,24,44,0.8)";
+      context.fillStyle = "rgba(11,11,13,0.8)";
       context.fillRect(lx, ly + 9 * unit, 36 * unit, 5 * unit);
       context.fillStyle = color;
       context.fillRect(lx, ly + 9 * unit, 36 * unit * level, 5 * unit);
@@ -346,18 +346,18 @@ function draw() {
       const [x, y] = toCanvas(point);
       context.beginPath();
       context.arc(x, y, (dragging === i ? 13 : 10) * unit, 0, Math.PI * 2);
-      context.fillStyle = "#1c2238";
+      context.fillStyle = "#0b0b0d";
       context.fill();
       context.lineWidth = 3 * unit;
-      context.strokeStyle = "#ffb547";
+      context.strokeStyle = "#d4e82a";
       context.stroke();
     });
   }
   if (mode === "ready") {
     const progress = 1 - Math.max(0, armedAt - now) / ARM_SECONDS;
-    context.fillStyle = "rgba(20,24,44,0.85)";
+    context.fillStyle = "rgba(11,11,13,0.85)";
     context.fillRect(0, 0, w, 8 * unit);
-    context.fillStyle = "#ffb547";
+    context.fillStyle = "#d4e82a";
     context.fillRect(0, 0, w * progress, 8 * unit);
   }
 }
