@@ -1,208 +1,352 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>0Keys – type on your desk</title>
-  <meta name="description" content="Try 0Keys in your browser: tap on your desk and your webcam turns it into a keyboard.">
-  <meta name="theme-color" content="#f5f1e6">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='6' fill='%23d4e82a' stroke='%230b0b0d' stroke-width='2.5'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='17' font-weight='700' text-anchor='middle' fill='%230b0b0d'%3E0%3C/text%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,600..900&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2">
-</head>
-<body>
-  <a class="skip" href="#try">Skip to the demo</a>
+  <head>
+    <meta charset="utf-8">
+    <meta name = "viewport "  content =" width=device-width ,initial-scale=1.0">
+     <title> 0Keys | Type on your desk</title>
+    <meta name = "description " content =" Try 0Keys in your browser: tap on your desk and your webcam will turn it into keyboard.">
+    <meta name =" theme-color" content ="  #fffbea">
+      <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23facc15'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='17' font-weight='700' text-anchor='middle' fill='%231f2328'%3E0%3C/text%3E%3C/svg%3E">
+    <style> 
+      :root {
+        --bg: #ffffff;
+        --bg-soft: #fffbea;
+        --bg-yellow: #fef3c7;
+           --text: #1f2328;
+        --muted: #5f6670;
+        --border: #ece6d2;
+         --yellow: #facc15;
+        --yellow-hover: #eab308;
+        --yellow-dark: #a16207;
+          --on-yellow: #1f2328;
+        --danger: #dc2626;
+        --ok: #16a34a;
+        --warn: #f59e0b;
+        --radius: 10px;
 
-  <header class="top">
-    <nav class="nav" aria-label="Main">
-      <a class="logo" href="#" aria-label="0Keys home">
-        <span class="cap">0</span><span class="cap">K</span><span class="cap">E</span><span class="cap">Y</span><span class="cap">S</span>
-      </a>
-      <button class="menu" id="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Menu">
-        <span></span><span></span>
-      </button>
-      <ul class="nav-links" id="nav-links">
-        <li><a href="#try">Try it</a></li>
-        <li><a href="#how">How it works</a></li>
-        <li><a href="#desktop">Desktop app</a></li>
-      </ul>
-      <a class="btn btn-pill nav-gh" href="https://github.com/lilithCode/0Keys">GitHub <span aria-hidden="true">↗</span></a>
-    </nav>
-  </header>
+      }
+      @media (prefers-color-scheme: dark){
+        :root {
+          --bg: #14130f;
+            --bg-soft: #1c1a14;
+          --bg-yellow: #2a2412;
+          --text: #f1eee4;
+            --muted: #a8a293;
+          --border: #34302a;
+          --yellow-dark: #facc15;
 
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee-track">
-      <span>Linux · Windows · macOS ✦</span><span>Hand tracking by MediaPipe ✦</span><span>Runs in your tab ✦</span><span>No video leaves your computer ✦</span>
-      <span>Linux · Windows · macOS ✦</span><span>Hand tracking by MediaPipe ✦</span><span>Runs in your tab ✦</span><span>No video leaves your computer ✦</span>
-    </div>
-  </div>
+        }
+      }
+       * {box-sizing: border-box;}
+       html{scroll-behavior: smooth;}
+       body { margin: 0;
+      background : var(--bg);
+    color: var(--text);
+  font: 16px/1.6 system-ui, -apple-system, " Segoe UI", Rboboto, Helvetica, Arial ,sans-serif;}
+  a{color : var(--yellow-dark); text-decoration : none ;}
+  a:hover {text-decoration : underline; }
+  h1, h2,h3{line-height: 1.25; margin: 0 0 .5em}
+  p{margin : 0 0 1rem;}
+     kbd {
+      font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      padding: 1px 6px;
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      background: var(--bg-yellow);
+    }
+  .highlight {
+    background: linear-gradient(transparent 60% , var(--yellow)60%);
+    padding: 0 4px; 
 
-  <main>
-    <section class="hero wrap">
-      <p class="sticker"><span aria-hidden="true">★</span> ZERO keyboard</p>
-      <h1>Your desk is the <span class="outline">keyboard</span></h1>
-      <p class="lede">Adjust your webcam to capture ur hands on table and start typing like normally like you're using a normal keyboard</p>
-      <div class="actions">
-        <a class="btn btn-dark btn-lg" id="hero-start" href="#try">Turn on camera</a>
-        <a class="btn btn-light btn-lg" href="#how">How it works <span aria-hidden="true">→</span></a>
+  }
+  .wrap {max-width: 1080px; margin : 0 auto; padding : 0 16px;}
+       .skip { position : absolute; left : -999px; }
+  .skip:focus { left: 16px ; top: 16px; background : var (-bg); padding : 8px; z-index:10;}
+
+  header { background: var(--bg-soft ); border-bottom: 1px solid var(--border);
+  .nav {display: flex; align-items: center; gap: 24px; height : 60px;}
+  .logo{ display : flex; align-items: center;gap : 8px; font-weight: 700;font-size: 20px; color: var (--text);}
+  .logo:hover {text-decoration: none;}
+  .logo-mark { 
+    display: grid; place-items: center;
+    width: 28px; height:28px; border-radius: 7px ;
+    background: var(--yellow); color: var(--on-yellow); font-size: 15px ;
+  }
+  .nav ul { display: flex; gap : 20px ; list-style: none; margin: 0 0 0 auto; padding: 0;}
+  .nav ul a  { color: var(--muted);}
+  .nav ul a:hover {
+
+    color: var (--text); text-decoration: none;}
+  } 
+  .button { 
+    display: inline-flex ; align-items: center; justify-content: center; gap: 6px;
+    padding : 8px 14px;
+    font : inherit; font-size: 15px; font-weight: 500;
+     color: var(--text) ; backgrouond: var(--bg);
+    border: 1px solid var (--border); border-radius: 8px;
+    cursor: pointer; 
+  }
+  .button:hover { background: var(--bg-yellow); text-decoration : none; }
+  .button:disabled { opacity: .5 ; cursor:  not-allowed; }
+     .button-primary {color: var ( --on-yellow) ; font-weight: 600; background: var(--yellow); border-color: var(--yellow);}
+  .button-primary.stop{ color: #fff; background: var(--danger); border-color: var(--yellow-hover);}
+  .button-lg { padding: 12px 20px; font-size: 16px;}
+    .button-sm { padding: 4px 10px; font-size: 13px;}
+   .button-block { width: 100%; }
+
+    .heroSection { background: linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%); }
+    .hero { padding: 56px 16px 32px; text-align: center; }
+     .hero h1 { font-size: clamp(30px, 5vw, 44px); }
+    .hero p { color: var(--muted); font-size: 18px; max-width: 600px; margin: 0 auto 24px; }
+     .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    .demo { display: grid; grid-template-columns: 1fr 320px; gap: 20px; padding-bottom: 56px; align-items: start; }
+    .screen {
+      position: relative;
+       aspect-ratio: 4 / 3;
+      background: #000;
+       border-radius: var(--radius);
+      overflow: hidden;
+      border: 3px solid var(--yellow);
+    }
+    .screen canvas { display: block; width: 100%; height: 100%; }
+    .cover {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 24px; text-align: center;
+      background: var(--bg-yellow);
+    }
+    .cover[hidden] { display: none; }
+    .cover h2 { font-size: 22px; }
+    .cover p { color: var(--muted); max-width: 420px; }
+     .coverNote { font-size: 14px; min-height: 1.5em; margin: 12px 0 0; }
+    .coverNote.error { color: var(--danger); }
+
+    .panel { display: flex; flex-direction: column; gap: 16px; }
+    .box { background: var(--bg); border: 1px solid var(--border); border-top: 3px solid var(--yellow); border-radius: var(--radius); padding: 16px; }
+      .boxHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+     .boxTitle { font-weight: 600; font-size: 15px; }
+    .boxActions { display: flex; gap: 6px; }
+
+    .state { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .light { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+       .light[data-state="ready"] { background: var(--warn); }
+    .light[data-state="typing"] { background: var(--ok); }
+    .light[data-state="error"] { background: var(--danger); }
+      .detail { color: var(--muted); font-size: 14px; margin: 6px 0 12px; }
+
+    .tape {
+      display: block;
+      min-height: 90px; max-height: 160px; overflow-y: auto;
+       padding: 10px;
+      font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap; word-break: break-word;
+        background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .caret { display: inline-block; width: 2px; height: 1.1em; vertical-align: text-bottom; background: var(--yellow-hover); animation: blink 1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .modifiers { font-size: 13px; color: var(--yellow-dark); font-weight: 600; margin: 8px 0 0; }
+     .modifiers:empty { display: none; }
+
+    #sensitivity-value { font-size: 13px; font-weight: 600; padding: 1px 8px; border-radius: 6px; background: var(--yellow); color: var(--on-yellow); }
+    input[type="range"] { width: 100%; accent-color: var(--yellow-hover); }
+    .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+    select {
+      width: 100%; padding: 8px 10px; margin-bottom: 10px;
+      font: inherit; font-size: 15px;
+        color: var(--text); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 8px;
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    section.alt { background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .section { padding: 56px 16px; }
+    .section h2 { font-size: 28px; text-align: center; margin-bottom: 32px; }
+     .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; list-style: none; padding: 0; margin: 0; }
+    .step { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .stepNum {
+      display: inline-flex; align-items: center; justify-content: center;
+        width: 32px; height: 32px; margin-bottom: 12px;
+      border-radius: 50%; background: var(--yellow); color: var(--on-yellow); font-weight: 700; font-size: 14px;
+    }
+    .step h3 { font-size: 18px; }
+    .step p { color: var(--muted); margin: 0; }
+    .tip {
+      max-width: 560px; margin: 28px auto 0; padding: 10px 16px;
+      text-align: center; color: var(--text);
+      background: var(--bg-yellow); border-left: 4px solid var(--yellow); border-radius: 8px;
+    }
+
+     .desktop { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
+    .desktop h2 { text-align: left; margin-bottom: 12px; }
+       .desktop p { color: var(--muted); }
+    pre {
+      margin: 0; padding: 16px;
+       font: 14px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #f1eee4; background: #1f1d17;
+       border-radius: var(--radius);
+      border-top: 3px solid var(--yellow);
+         overflow-x: auto;
+    }
+    pre .p { color: var(--yellow); user-select: none; }
+    .code-note { font-size: 14px; color: var(--muted); margin: 8px 0 0; }
+
+     footer { background: var(--bg-soft); border-top: 1px solid var(--border); padding: 24px 0; font-size: 14px; color: var(--muted); }
+    .footer-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+    @media (max-width: 860px) {
+      .demo, .desktop { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .nav ul { display: none; }
+        .nav .button { margin-left: auto; }
+      .hero { padding-top: 40px; }
+    }
+  </style>
+  </head>
+  <body>
+    <a class="skip" href="#try">Skip to the demo</a>
+     <header> 
+      <nav class="nav wrap" aria-label="Main">
+        <a class="logo" href="#" ><span class="logo-mark" aria-hidden="true">0</span>0Keys</a>
+         <ul>
+          <li><a href="#try">Try it </a></li>
+             <li><a href=" #how">How it works</a></li>
+          <li><a href= "#desktop">Desktop app</a></li>
+        </ul>
+        <a class="button" href="https://github.com/lilithCode/0keys">GitHub</a>
+
+      </nav>
+    </header>
+
+    <main>
+      <div class = " heroSection">
+        <section class="insideHero">
+          <h1>Type on your desk with <span class = "highlight">Your webcam</span></span>
+ 
+          </h1>
+        </section>
       </div>
-    </section>
+      <section class ="insideHero">
+        <h1>Type on your desk with with your webcam</h1>
+        <p>Point your webcame at your hands on the table and type as if you were using a normal keybard</p>
+        <div class="actions">
+          <a class ="buttonMain" id="hero-start" href="#try"> Turn on camera</a>
+             <a class ="button button-lg" href="#how">How it works</a>
+          </div>
 
-    <section class="stage wrap" id="try" aria-label="Live demo">
+    <section class="demoInside" id="try" aria-label="Live demo">
       <div class="screen">
         <canvas id="view" aria-label="Camera picture with the keyboard drawn over your desk"></canvas>
         <div class="cover" id="cover">
-          <p class="label label-lime">/ Setup</p>
-          <p class="cover-title">Adjust the camera at your desk</p>
-          <p class="cover-text">Tilt your laptop screen forward or use a USB webcam pointing down, both hands and wrists in frame. </p>
-          <button class="btn btn-lime" id="start" type="button">Turn on camera</button>
-          <p class="cover-note" id="load-note" role="status"></p>
+          <h2>Set up your camera</h2>
+            <p>Tilt your laptop screen forward or point a USB webcam down at the desk. Keep both hands and wrists in view.</p>
+            <button class="buttonMain" id="start" type="button">Turn on camera</button>
+          <p class="coverNote" id="load-note" role="status"></p>
         </div>
       </div>
 
       <aside class="panel">
-        <div class="panel-sec">
+        <div class="box">
           <div class="state" role="status" aria-live="polite">
             <span class="light" id="light"></span>
-            <span class="state-label" id="state-label">Camera off</span>
+            <span id="labelling">Camera off</span>
           </div>
-          <p class="detail" id="detail">Turn on the camera to begin</p>
-          <button class="btn btn-dark btn-block" id="toggle" type="button" disabled>Start typing</button>
+          <p class="detail" id="detail">Turn on the camera to begin.</p>
+          <button class="button button-primary button-block" id="toggle" type="button" disabled>Start typing</button>
         </div>
 
-        <div class="panel-sec">
-          <div class="sec-head">
-            <span class="label">/ Output</span>
-            <span class="sec-actions">
-              <button class="btn btn-sm" id="copy" type="button">Copy</button>
-              <button class="btn btn-sm" id="clear" type="button">Clear</button>
+        <div class="box">
+          <div class="boxHead">
+            <span class="boxTitle">Typed text</span>
+            <span class="boxActions">
+              <button class="buttonSmallSize" id="copy" type="button">Copy</button>
+              <button class="buttonSmallSize" id="clear" type="button">Clear</button>
             </span>
           </div>
           <output class="tape" id="tape" aria-live="polite"><span id="typed"></span><span class="caret"></span></output>
           <p class="modifiers" id="modifiers"></p>
         </div>
 
-        <div class="panel-sec">
-          <label class="sec-head" for="sensitivity">
-            <span class="label">/ Sensitivity</span>
-            <b class="readout" id="sensitivity-value">1.00</b>
+        <div class="box">
+          <label class="boxHead" for="sensitivity">
+            <span class="boxTitle">Sensitivity</span>
+            <span id="sensitivity-value">1.00</span>
           </label>
           <input id="sensitivity" type="range" min="0.4" max="2.5" step="0.05" value="1">
-          <p class="hint">Raise if taps are missed. Lower if keys are misclicking while resting hand</p>
+          <p class="hint">Raise it if taps are missed. Lower it if resting hands press keys.</p>
         </div>
 
-        <div class="panel-sec">
-          <label class="sec-head" for="camera"><span class="label">/ Camera</span></label>
-          <div class="select">
-            <select id="camera"><option value="">Default camera</option></select>
-          </div>
+        <div class="box">
+          <label class="boxHead" for="camera"><span class="boxTitle">Camera</span></label>
+          <select id="camera"><option value="">Default camera</option></select>
           <div class="row">
-            <button class="btn" id="flip" type="button">Flip rows</button>
-            <button class="btn" id="reset" type="button">Reset corners</button>
+            <button class="button" id="flip" type="button">Flip rows</button>
+            <button class="button" id="reset" type="button">Reset corners</button>
           </div>
         </div>
       </aside>
     </section>
 
-    <section class="how wrap" id="how">
-      <p class="label">/ How it works</p>
-      <h2>Three steps</h2>
-      <ol class="steps">
-        <li class="card">
-          <span class="num" aria-hidden="true">01</span>
-          <h3>Place the keyboard</h3>
-          <p>Drag the four corners until the you think keys are in the right place. If you want Space bar on the far side then Press
-            <kbd>Flip rows</kbd></p>
-        </li>
-        <li class="card">
-          <span class="num" aria-hidden="true">02</span>
-          <h3>Start typing</h3>
-          <p>Press <b>Start typing</b> and put your hands on the position. The light turns green when it’s ready</p>
-        </li>
-        <li class="card">
-          <span class="num" aria-hidden="true">03</span>
-          <h3>Rest, then tap</h3>
-          <p>Hold still for a second, then tap the table and lift. Each fingertip will shows the key it’s over</p>
-        </li>
-      </ol>
-      <p class="tip"><span class="tip-badge">Tip</span> <span>Just a Tip to lift your fingers above in the air so that it can detect the Taps better
-        </p>
-    </section>
-
-    <section class="desktop wrap" id="desktop">
-      <div class="desktop-card">
-        <div class="desktop-copy">
-          <p class="label label-lime">/ Desktop app</p>
-          <h2>Type into any app</h2>
-          <p>Runs in the background on Linux, Windows and macOS. Press <kbd class="kbd-light">Ctrl</kbd>
-            <kbd class="kbd-light">Alt</kbd> <kbd class="kbd-light">K</kbd> to start, again to stop. It can even use an
-            Android phone as camera for better resolution</p>
-          <a class="btn btn-lime btn-lg" href="https://github.com/lilithCode/0Keys">Download from GitHub <span aria-hidden="true">↗</span></a>
-        </div>
-        <figure class="term">
-          <figcaption><span>Linux / macOS</span><span>Bash</span></figcaption>
-          <pre><code><span>git clone https://github.com/lilithCode/0Keys</span>
-<span>cd 0Keys</span>
-<span>./install.sh</span>
-<span>./0keys</span></code></pre>
-          <p class="term-note">Windows → run <b>install.ps1</b></p>
-        </figure>
+    <section class="alt" id="how">
+      <div class="section wrap">
+        <h2>How it works</h2>
+        <ol class="steps">
+          <li class="step">
+            <span class="stepNum" aria-hidden="true">1</span>
+            <h3>Place the keyboard</h3>
+            <p>Drag the four corners until the keys sit where you want them. To put the space bar on the far side, press <kbd>Flip rows</kbd>.</p>
+          </li>
+          <li class="step">
+            <span class="stepNum" aria-hidden="true">2</span>
+            <h3>Start typing</h3>
+            <p>Press <b>Start typing</b> and put your hands in position. The light turns green when it's ready.</p>
+          </li>
+          <li class="step">
+            <span class="stepNum" aria-hidden="true">3</span>
+            <h3>Rest, then tap</h3>
+            <p>Hold still for a second, then tap the table and lift. Each fingertip shows the key it's over.</p>
+          </li>
+        </ol>
+        <p class="tip"><b>Tip:</b> lift your fingers a little between taps so they're detected better.</p>
       </div>
     </section>
-  </main>
-
-  <footer class="bottom">
-    <div class="wrap bottom-row">
-      <p>0Keys — experimental project. clear taps work best</p>
-      <a href="https://github.com/lilithCode/0Keys">Source on GitHub <span aria-hidden="true">↗</span></a>
+    <section id="desktop">
+      <div class="section wrap desktop">
+        <div>
+          <h2> Desktop</h2>
+          <p>Type into any app on Linux, Windows and macOS. Press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>K</kbd> to start and again to stop. You can also use an Android phone as the camera for a sharper picture.</p>
+          <a class="buttonMain" href="https://github.com/lilithCode/0Keys">Download from Github</a>
+          
+        </div>
+      </div>
+      <pre><code><span class="p">$</span>git clone https://github.com/lilithCode/0Keys
+      <span class="p">$</span>cd 0Keys
+    <span class="p">$</span>./install.sh
+  <span class="p">$</span>./0Keys</code></pre>
+  <p class="code-note">On Windows,run <b> install.ps1</b> instead.</p>
+      </div>
     </div>
-  </footer>
+    </section>
+     
+    </main>
+    <footer>
+      <div class="footerRow">
+        <span>0Keys is an experimental project. Clear taps work best.</span>
+        <a href="https://github.com/lilithCode/0Keys">Source on GitHub</a>
+      </div>
+    </footer>
+    <script>
+      document.getElementById("hero-start").addEventListener("click",()=>{
+        if(!document.getElementById("cover").hidden) document.getElementById("start").click();
 
-  <div class="cursor" id="cursor" aria-hidden="true"></div>
-
-  <script>
-    (() => {
-      const menu = document.getElementById("menu");
-      const links = document.getElementById("nav-links");
-      menu.addEventListener("click", () => {
-        const open = menu.getAttribute("aria-expanded") !== "true";
-        menu.setAttribute("aria-expanded", String(open));
-        links.classList.toggle("open", open);
-      });
-      links.addEventListener("click", (event) => {
-        if (event.target.closest("a")) {
-          menu.setAttribute("aria-expanded", "false");
-          links.classList.remove("open");
-        }
       });
 
-      document.getElementById("hero-start").addEventListener("click", () => {
-        const start = document.getElementById("start");
-        if (!document.getElementById("cover").hidden) start.click();
-      });
-
-      const range = document.getElementById("sensitivity");
-      const fill = () => {
-        const pct = ((range.value - range.min) / (range.max - range.min)) * 100;
-        range.style.setProperty("--fill", `${pct}%`);
-      };
-      range.addEventListener("input", fill);
-      fill();
-
-      const cursor = document.getElementById("cursor");
-      if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-      addEventListener("pointermove", (event) => {
-        cursor.style.transform = `translate(${event.clientX}px, ${event.clientY}px)`;
-        cursor.classList.add("on");
-      }, { passive: true });
-      document.addEventListener("pointerleave", () => cursor.classList.remove("on"));
-      addEventListener("pointerover", (event) => {
-        cursor.classList.toggle("big", !!event.target.closest("a, button, select, input, canvas"));
-      });
-    })();
-  </script>
-  <script type="module" src="demo.js?v=2"></script>
-</body>
+    </script>
+    <script type="module" src="demo.js?v=2"></script>
+  </body>
 </html>
