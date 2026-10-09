@@ -64,7 +64,7 @@
       .skip:focus { left: 16px; top: 16px; background: var(--bg); padding: 8px; z-index: 10;}
 
       header { background: var(--bg-soft); border-bottom: 1px solid var(--border); }
-      .nav {display: flex; align-items: center; gap: 24px; height: 60px;}
+      .navInside {display: flex; align-items: center; gap: 24px; height: 60px;}
         .logo{ display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 20px; color: var(--text);}
       .logo:hover {text-decoration: none;}
       .logoDesign {
@@ -72,9 +72,9 @@
         width: 28px; height: 28px; border-radius: 7px;
           background: var(--yellow); color: var(--on-yellow); font-size: 15px;
       }
-      .nav ul { display: flex; gap: 20px; list-style: none; margin: 0 0 0 auto; padding: 0;}
-      .nav ul a { color: var(--muted);}
-        .nav ul a:hover { color: var(--text); text-decoration: none;}
+      .navInside ul { display: flex; gap: 20px; list-style: none; margin: 0 0 0 auto; padding: 0;}
+      .navInside ul a { color: var(--muted);}
+        .navInside ul a:hover { color: var(--text); text-decoration: none;}
 
       .button, .buttonMain, .buttonSmallSize {
         display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -200,8 +200,8 @@
          .steps { grid-template-columns: 1fr; }
       }
       @media (max-width: 560px) {
-        .nav ul { display: none; }
-        .nav .button { margin-left: auto; }
+        .navInside ul { display: none; }
+        .navInside .button { margin-left: auto; }
         .hero, .insideHero { padding-top: 40px; }
       }
     </style>
